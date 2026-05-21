@@ -18,7 +18,7 @@ export default function Header({
   notifNewCount,
   onToggleCart,
   onToggleNotifications,
-  onGoOrders,
+  onGoLogin,
   onSearchSubmit,
 }) {
   const location = useLocation()
@@ -117,7 +117,7 @@ export default function Header({
 
             <button
               type="button"
-              onClick={onGoOrders}
+              onClick={onGoLogin}
               className="rounded-full border border-white/10 bg-white/5 p-2 text-white/80 transition hover:text-white"
               aria-label="Usuario"
             >
@@ -148,6 +148,16 @@ export default function Header({
                 className="rounded-full bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-4 py-2 text-sm font-bold text-[#05102a] shadow-sm shadow-cyan-500/20 transition hover:brightness-110"
               >
                 Cart
+              </button>
+            </div>
+
+            <div className="hidden md:block">
+              <button
+                type="button"
+                onClick={onGoLogin}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
+              >
+                Iniciar sesión
               </button>
             </div>
 

@@ -9,55 +9,7 @@ from store.models import CartItem, Category, Notification, Order, Product
 
 
 def _svg_data_uri(title: str, subtitle: str = '', accent_a: str = '#A855F7', accent_b: str = '#22D3EE'):
-    safe_title = (title or '').replace('&', 'and')
-    safe_sub = (subtitle or '').replace('&', 'and')
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#08142E"/>
-      <stop offset="0.55" stop-color="#071024"/>
-      <stop offset="1" stop-color="#020617"/>
-    </linearGradient>
-    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="{accent_a}"/>
-      <stop offset="1" stop-color="{accent_b}"/>
-    </linearGradient>
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
-      <feColorMatrix in="blur" type="matrix"
-        values="1 0 0 0 0
-                0 1 0 0 0
-                0 0 1 0 0
-                0 0 0 18 -8" result="glow"/>
-      <feMerge>
-        <feMergeNode in="glow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
-      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#0B2246" stroke-width="1" opacity="0.6"/>
-    </pattern>
-  </defs>
-  <rect width="900" height="600" fill="url(#bg)"/>
-  <rect width="900" height="600" fill="url(#grid)" opacity="0.5"/>
-  <g filter="url(#glow)" opacity="0.95">
-    <path d="M120 420 C 220 220, 360 520, 480 340 S 720 260, 800 420"
-      fill="none" stroke="url(#neon)" stroke-width="12" stroke-linecap="round"/>
-    <circle cx="200" cy="190" r="38" fill="none" stroke="{accent_b}" stroke-width="8"/>
-    <circle cx="680" cy="170" r="54" fill="none" stroke="{accent_a}" stroke-width="10"/>
-    <rect x="120" y="120" width="660" height="360" rx="28" fill="#0B1630" opacity="0.42" stroke="url(#neon)" stroke-width="2"/>
-  </g>
-  <g>
-    <text x="140" y="270" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial"
-      font-size="52" font-weight="800" fill="#EAF2FF">{safe_title}</text>
-    <text x="140" y="318" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial"
-      font-size="22" font-weight="500" fill="#B8C6E6" opacity="0.92">{safe_sub}</text>
-    <text x="140" y="468" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial"
-      font-size="14" font-weight="600" fill="#93C5FD" opacity="0.8">PALACIO GAMER · PROTOCOLO NEÓN</text>
-  </g>
-</svg>"""
-    encoded = base64.b64encode(svg.encode('utf-8')).decode('ascii')
-    return f'data:image/svg+xml;base64,{encoded}'
+    return ''
 
 
 def _status_from_stock(stock: int):
@@ -156,6 +108,9 @@ class Command(BaseCommand):
                     layout_type=c['layout_type'],
                 )
                 created_categories[cat.slug] = cat
+
+            self.stdout.write(self.style.SUCCESS('Seed completado: categorías creadas (sin productos ni imágenes)'))
+            return
 
             def add_product(
                 *,

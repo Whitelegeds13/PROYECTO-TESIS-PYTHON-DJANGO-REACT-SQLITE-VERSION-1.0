@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { addToCart, getCart, getNotifications } from './api/client.js'
+import { addToCart, getCart, getNotifications, login } from './api/client.js'
 import Footer from './components/Footer.jsx'
 import Header from './components/Header.jsx'
 import Home from './pages/Home.jsx'
 import Hardware from './pages/Hardware.jsx'
+import Login from './pages/Login.jsx'
 import Orders from './pages/Orders.jsx'
 
 export default function App() {
@@ -76,6 +77,10 @@ export default function App() {
     setNotificationsOpen(false)
   }, [location.pathname])
 
+  async function handleLogin({ username, password }) {
+    await login({ username, password })
+  }
+
   return (
     <div className="min-h-full">
       <Header
@@ -98,7 +103,7 @@ export default function App() {
           setCartOpen(false)
           if (next) refreshNotifications()
         }}
-        onGoOrders={() => navigate('/mis-pedidos')}
+        onGoLogin={() => navigate('/login')}
         onSearchSubmit={handleSearchSubmit}
       />
 
@@ -107,6 +112,10 @@ export default function App() {
           <Route path="/" element={<Home onAddToCart={handleAddToCart} />} />
           <Route path="/hardware" element={<Hardware onAddToCart={handleAddToCart} />} />
           <Route path="/mis-pedidos" element={<Orders />} />
+          <Route
+            path="/login"
+            element={<Login onLogin={handleLogin} afterLoginPath="/" />}
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

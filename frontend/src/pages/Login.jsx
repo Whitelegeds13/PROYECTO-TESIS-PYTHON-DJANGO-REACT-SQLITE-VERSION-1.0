@@ -75,13 +75,18 @@ export default function Login({ onLogin, onRegisterClick, afterLoginPath = '/' }
             <Link to="/" className="text-white/60 hover:text-white">
               Volver al Home
             </Link>
-            <button type="button" onClick={onRegisterClick} className="font-semibold text-cyan-300 hover:text-cyan-200">
-              Crear cuenta
-            </button>
+            {onRegisterClick ? (
+              <button
+                type="button"
+                onClick={onRegisterClick}
+                className="font-semibold text-cyan-300 hover:text-cyan-200"
+              >
+                Crear cuenta
+              </button>
+            ) : null}
           </div>
         </form>
       </div>
     </div>
   )
 }
-

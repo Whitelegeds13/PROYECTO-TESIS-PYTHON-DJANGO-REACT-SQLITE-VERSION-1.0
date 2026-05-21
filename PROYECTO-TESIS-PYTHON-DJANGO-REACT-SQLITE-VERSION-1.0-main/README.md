@@ -79,13 +79,13 @@ sudo apt install -y python3-venv
 # sudo apt install -y python3.12-venv
 
 python3 -m venv venv
-source venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
-python backend/manage.py makemigrations
-python backend/manage.py migrate
-python backend/manage.py seed_store
-python backend/manage.py runserver
+. venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
+python3 backend/manage.py makemigrations
+python3 backend/manage.py migrate
+python3 backend/manage.py seed_store
+python3 backend/manage.py runserver
 ```
 
 Si el backend está arriba, deberías poder abrir:
@@ -117,6 +117,7 @@ Notas:
 
 - Si ves `ECONNREFUSED 127.0.0.1:8000` en Vite, es porque el backend no está corriendo aún en ese host/puerto.
 - El proxy de Vite envía `/api/*` a `http://127.0.0.1:8000`.
+- Si te sale `source: no se encontró la orden`, usa `. venv/bin/activate` (punto + espacio) o abre una shell bash.
 
 ## Uso
 
