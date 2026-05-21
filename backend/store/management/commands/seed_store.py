@@ -1,6 +1,6 @@
-import base64
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils.text import slugify
@@ -109,7 +109,32 @@ class Command(BaseCommand):
                 )
                 created_categories[cat.slug] = cat
 
-            self.stdout.write(self.style.SUCCESS('Seed completado: categorías creadas (sin productos ni imágenes)'))
+            User = get_user_model()
+            employee_username = 'GMR-0000'
+            employee_email = 'empleado@palaciogamer.local'
+            employee_password = 'PalacioGamer#2026!'
+
+            employee, created = User.objects.get_or_create(
+                username=employee_username,
+                defaults={'email': employee_email, 'is_staff': True},
+            )
+            if created:
+                employee.set_password(employee_password)
+                employee.save(update_fields=['password'])
+            else:
+                if not employee.is_staff:
+                    employee.is_staff = True
+                    employee.save(update_fields=['is_staff'])
+                if employee.email != employee_email:
+                    employee.email = employee_email
+                    employee.save(update_fields=['email'])
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    'Seed completado: categorías creadas (sin productos ni imágenes). '
+                    f'Empleado: {employee_username} / {employee_password}'
+                )
+            )
             return
 
             def add_product(

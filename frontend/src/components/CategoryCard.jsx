@@ -1,9 +1,40 @@
 import { Link } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+
+const DEFAULT_CATEGORY_MEDIA_IMAGE = '/media/Gemini_Generated_Image_xf27exf27exf27ex.png'
+
+const CATEGORY_MEDIA_BY_SLUG = {
+  almacenamiento: '/media/Almacenamiento NVMe.png',
+  chasis: '/media/Chasis de CPU .jpeg',
+  'memoria-ram': '/media/Memoria Ram.jpg',
+  ensambles: '/media/Ensambles de Computadoras.png',
+}
 
 function imgSrc(dataUri) {
   if (!dataUri) return null
   if (dataUri.startsWith('data:')) return dataUri
+  if (dataUri.startsWith('/') || dataUri.startsWith('http://') || dataUri.startsWith('https://')) return dataUri
   return `data:image/png;base64,${dataUri}`
+}
+
+function normalizeMediaPath(p) {
+  if (!p) return null
+  if (p.startsWith('/media/')) return encodeURI(p)
+  return p
+}
+
+function mediaCandidatesForSlug(slug) {
+  const s = String(slug || '').trim()
+  if (!s) return []
+  return [
+    `/media/${s}.png`,
+    `/media/${s}.jpg`,
+    `/media/${s}.jpeg`,
+    `/media/category-${s}.png`,
+    `/media/category-${s}.jpg`,
+    `/media/${s.replaceAll('-', '_')}.png`,
+    `/media/${s.replaceAll('-', '_')}.jpg`,
+  ]
 }
 
 export default function CategoryCard({ category, variant = 'md' }) {
@@ -12,6 +43,18 @@ export default function CategoryCard({ category, variant = 'md' }) {
     md: 'min-h-[160px]',
     sm: 'min-h-[140px]',
   }
+
+  const baseImg = imgSrc(category.image_base64)
+  const candidates = useMemo(
+    () => [
+      CATEGORY_MEDIA_BY_SLUG[category.slug],
+      ...mediaCandidatesForSlug(category.slug),
+      DEFAULT_CATEGORY_MEDIA_IMAGE,
+    ].filter(Boolean),
+    [category.slug],
+  )
+  const [candidateIndex, setCandidateIndex] = useState(0)
+  const effectiveImg = normalizeMediaPath(candidates[candidateIndex] || baseImg || null)
 
   return (
     <Link
@@ -22,11 +65,14 @@ export default function CategoryCard({ category, variant = 'md' }) {
       ].join(' ')}
     >
       <div className="absolute inset-0">
-        {imgSrc(category.image_base64) ? (
+        {effectiveImg ? (
           <img
-            src={imgSrc(category.image_base64)}
+            src={effectiveImg}
             alt={category.name}
             className="h-full w-full object-cover opacity-70 blur-[0.3px] transition duration-300 group-hover:scale-[1.03]"
+            onError={() => {
+              setCandidateIndex((i) => (i + 1 < candidates.length ? i + 1 : i))
+            }}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-fuchsia-500/20 via-cyan-400/15 to-sky-400/10" />
@@ -45,4 +91,3 @@ export default function CategoryCard({ category, variant = 'md' }) {
     </Link>
   )
 }
-
