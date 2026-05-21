@@ -205,4 +205,12 @@ class MeView(APIView):
 
     def get(self, request):
         u = request.user
-        return Response({'id': u.id, 'username': u.username, 'email': u.email})
+        return Response(
+            {
+                'id': u.id,
+                'username': u.username,
+                'email': u.email,
+                'is_staff': bool(getattr(u, 'is_staff', False)),
+                'is_superuser': bool(getattr(u, 'is_superuser', False)),
+            }
+        )

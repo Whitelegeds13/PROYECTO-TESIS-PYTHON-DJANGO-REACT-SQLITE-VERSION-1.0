@@ -118,21 +118,17 @@ class Command(BaseCommand):
                 username=employee_username,
                 defaults={'email': employee_email, 'is_staff': True},
             )
-            if created:
-                employee.set_password(employee_password)
-                employee.save(update_fields=['password'])
-            else:
-                if not employee.is_staff:
-                    employee.is_staff = True
-                    employee.save(update_fields=['is_staff'])
-                if employee.email != employee_email:
-                    employee.email = employee_email
-                    employee.save(update_fields=['email'])
+            if not employee.is_staff:
+                employee.is_staff = True
+            if employee.email != employee_email:
+                employee.email = employee_email
+            employee.set_password(employee_password)
+            employee.save(update_fields=['is_staff', 'email', 'password'])
 
             self.stdout.write(
                 self.style.SUCCESS(
                     'Seed completado: categorías creadas (sin productos ni imágenes). '
-                    f'Empleado: {employee_username} / {employee_password}'
+                    f'Empleado creado/asegurado: {employee_username}'
                 )
             )
             return

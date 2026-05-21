@@ -50,6 +50,10 @@ export async function login({ username, password }) {
   return data
 }
 
+export async function loginEmployee({ username, password }) {
+  return login({ username, password })
+}
+
 export async function refreshToken() {
   const refresh = localStorage.getItem(REFRESH_KEY) || ''
   if (!refresh) throw new Error('No refresh token')

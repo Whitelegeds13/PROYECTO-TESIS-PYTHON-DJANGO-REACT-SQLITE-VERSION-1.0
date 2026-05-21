@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { addToCart, getAccessToken, getCart, getNotifications, login } from './api/client.js'
+import { addToCart, clearTokens, getAccessToken, getCart, getNotifications, login } from './api/client.js'
 import Footer from './components/Footer.jsx'
 import Header from './components/Header.jsx'
 import Home from './pages/Home.jsx'
 import Hardware from './pages/Hardware.jsx'
-import EmployeeLogin from './pages/EmployeeLogin.jsx'
 import LoginChoice from './pages/LoginChoice.jsx'
 import Login from './pages/Login.jsx'
+import LoginEmpleado from './pages/LoginEmpleado.jsx'
 import Orders from './pages/Orders.jsx'
+import EmployeeLayout from './pages/empleado/EmployeeLayout.jsx'
+import EmployeeSection from './pages/empleado/EmployeeSection.jsx'
 
 export default function App() {
   const navigate = useNavigate()
@@ -87,8 +89,13 @@ export default function App() {
     setNotificationsOpen(false)
   }, [location.pathname])
 
-  async function handleLogin({ username, password }) {
+  async function handleClientLogin({ username, password }) {
     await login({ username, password })
+  }
+
+  function ProtectedEmployeeRoute({ children }) {
+    if (!getAccessToken()) return <Navigate to="/login-empleado" replace />
+    return children
   }
 
   return (
@@ -125,9 +132,34 @@ export default function App() {
           <Route path="/iniciar-sesion" element={<LoginChoice />} />
           <Route
             path="/login"
-            element={<Login onLogin={handleLogin} afterLoginPath="/" />}
+            element={<Login onLogin={handleClientLogin} afterLoginPath="/" />}
           />
-          <Route path="/login-empleado" element={<EmployeeLogin onLogin={handleLogin} afterLoginPath="/" />} />
+          <Route path="/login-empleado" element={<LoginEmpleado />} />
+
+          <Route
+            path="/empleado"
+            element={
+              <ProtectedEmployeeRoute>
+                <EmployeeLayout
+                  onLogout={() => {
+                    clearTokens()
+                    navigate('/login-empleado', { replace: true })
+                  }}
+                />
+              </ProtectedEmployeeRoute>
+            }
+          >
+            <Route path="dashboard" element={<EmployeeSection title="Dashboard" />} />
+            <Route path="productos" element={<EmployeeSection title="Productos" />} />
+            <Route path="ventas" element={<EmployeeSection title="Ventas" />} />
+            <Route path="clientes" element={<EmployeeSection title="Clientes" />} />
+            <Route path="entregas" element={<EmployeeSection title="Entregas" />} />
+            <Route path="pagos" element={<EmployeeSection title="Pagos" />} />
+            <Route path="reportes" element={<EmployeeSection title="Reportes" />} />
+            <Route path="configuracion" element={<EmployeeSection title="Configuración" />} />
+            <Route path="*" element={<Navigate to="/empleado/dashboard" replace />} />
+          </Route>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
