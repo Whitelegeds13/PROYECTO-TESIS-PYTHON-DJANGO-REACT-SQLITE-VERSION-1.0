@@ -1,20 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { addToCart, clearTokens, getCart, getMe, getNotifications, login, register } from './api/client.js'
+import { addToCart, getCart, getNotifications } from './api/client.js'
 import Footer from './components/Footer.jsx'
 import Header from './components/Header.jsx'
 import Home from './pages/Home.jsx'
 import Hardware from './pages/Hardware.jsx'
-import Login from './pages/Login.jsx'
 import Orders from './pages/Orders.jsx'
-import Register from './pages/Register.jsx'
 
 export default function App() {
   const navigate = useNavigate()
   const location = useLocation()
-
-  const [authUser, setAuthUser] = useState(null)
-  const [authReady, setAuthReady] = useState(false)
 
   const [cartOpen, setCartOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -72,50 +67,14 @@ export default function App() {
   }
 
   useEffect(() => {
-    async function init() {
-      try {
-        const me = await getMe()
-        setAuthUser(me)
-      } catch {
-        setAuthUser(null)
-      } finally {
-        setAuthReady(true)
-      }
-      refreshCart()
-      refreshNotifications()
-    }
-    init()
+    refreshCart()
+    refreshNotifications()
   }, [])
 
   useEffect(() => {
     setCartOpen(false)
     setNotificationsOpen(false)
   }, [location.pathname])
-
-  async function handleLogin({ username, password }) {
-    await login({ username, password })
-    const me = await getMe()
-    setAuthUser(me)
-  }
-
-  async function handleRegister({ username, email, password }) {
-    await register({ username, email, password })
-    await handleLogin({ username, password })
-  }
-
-  function handleLogout() {
-    clearTokens()
-    setAuthUser(null)
-    navigate('/')
-  }
-
-  const isAuthenticated = Boolean(authUser)
-
-  function Protected({ children }) {
-    if (!authReady) return <div className="mx-auto max-w-6xl px-4 pt-10 text-white/60">Cargando…</div>
-    if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname }} />
-    return children
-  }
 
   return (
     <div className="min-h-full">
@@ -127,8 +86,6 @@ export default function App() {
         notificationsLoading={notificationsLoading}
         notificationsOpen={notificationsOpen}
         notifNewCount={notifNewCount}
-        authUser={authUser}
-        isAuthenticated={isAuthenticated}
         onToggleCart={() => {
           const next = !cartOpen
           setCartOpen(next)
@@ -142,8 +99,6 @@ export default function App() {
           if (next) refreshNotifications()
         }}
         onGoOrders={() => navigate('/mis-pedidos')}
-        onGoLogin={() => navigate('/login')}
-        onLogout={handleLogout}
         onSearchSubmit={handleSearchSubmit}
       />
 
@@ -151,34 +106,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home onAddToCart={handleAddToCart} />} />
           <Route path="/hardware" element={<Hardware onAddToCart={handleAddToCart} />} />
-          <Route
-            path="/mis-pedidos"
-            element={
-              <Protected>
-                <Orders />
-              </Protected>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <Login
-                onLogin={handleLogin}
-                onRegisterClick={() => navigate('/crear-cuenta')}
-                afterLoginPath={location.state?.from || '/'}
-              />
-            }
-          />
-          <Route
-            path="/crear-cuenta"
-            element={
-              <Register
-                onRegister={handleRegister}
-                onLoginClick={() => navigate('/login')}
-                afterRegisterPath={location.state?.from || '/'}
-              />
-            }
-          />
+          <Route path="/mis-pedidos" element={<Orders />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

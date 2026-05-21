@@ -26,7 +26,6 @@ py -m venv venv
 .\venv\Scripts\python backend\manage.py makemigrations
 .\venv\Scripts\python backend\manage.py migrate
 .\venv\Scripts\python backend\manage.py seed_store
-.\venv\Scripts\python backend\manage.py createsuperuser
 .\venv\Scripts\python backend\manage.py runserver
 ```
 
@@ -38,6 +37,12 @@ URLs útiles:
   - `POST http://127.0.0.1:8000/api/token/refresh/`
 
 La base de datos SQLite se guarda en `backend/db.sqlite3`.
+
+Si necesitas entrar al admin, crea un superusuario (opcional):
+
+```powershell
+.\venv\Scripts\python backend\manage.py createsuperuser
+```
 
 Seed (Palacio Gamer):
 
@@ -80,8 +85,18 @@ python -m pip install "Django<6" djangorestframework django-cors-headers djangor
 python backend/manage.py makemigrations
 python backend/manage.py migrate
 python backend/manage.py seed_store
-python backend/manage.py createsuperuser
 python backend/manage.py runserver
+```
+
+Si el backend está arriba, deberías poder abrir:
+
+- API: http://127.0.0.1:8000/api/categories/
+- Admin: http://127.0.0.1:8000/admin/
+
+Si necesitas entrar al admin, crea un superusuario (opcional):
+
+```bash
+python backend/manage.py createsuperuser
 ```
 
 ### 2) Frontend (React + Tailwind)
@@ -94,8 +109,17 @@ npm install
 npm run dev
 ```
 
+Abrir:
+
+- Frontend: http://localhost:5173/
+
+Notas:
+
+- Si ves `ECONNREFUSED 127.0.0.1:8000` en Vite, es porque el backend no está corriendo aún en ese host/puerto.
+- El proxy de Vite envía `/api/*` a `http://127.0.0.1:8000`.
+
 ## Uso
 
 1. Inicia el backend (Django) en `http://127.0.0.1:8000`.
 2. Inicia el frontend (React) en `http://localhost:5173`.
-3. En el login del frontend, usa el correo/usuario y contraseña del superusuario que creaste con `createsuperuser`.
+3. Abre el Home en `http://localhost:5173/` y navega a `/hardware` y `/mis-pedidos`.

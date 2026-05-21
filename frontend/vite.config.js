@@ -6,7 +6,18 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:8000',
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (_err, _req, res) => {
+            if (!res || res.headersSent) return
+            res.writeHead(502, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ detail: 'Backend no disponible en http://127.0.0.1:8000' }))
+          })
+        },
+      },
     },
   },
 })

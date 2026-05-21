@@ -16,13 +16,9 @@ export default function Header({
   notificationsLoading,
   notificationsOpen,
   notifNewCount,
-  authUser,
-  isAuthenticated,
   onToggleCart,
   onToggleNotifications,
   onGoOrders,
-  onGoLogin,
-  onLogout,
   onSearchSubmit,
 }) {
   const location = useLocation()
@@ -121,7 +117,7 @@ export default function Header({
 
             <button
               type="button"
-              onClick={isAuthenticated ? onGoOrders : onGoLogin}
+              onClick={onGoOrders}
               className="rounded-full border border-white/10 bg-white/5 p-2 text-white/80 transition hover:text-white"
               aria-label="Usuario"
             >
@@ -153,26 +149,6 @@ export default function Header({
               >
                 Cart
               </button>
-            </div>
-
-            <div className="hidden md:block">
-              {isAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
-                >
-                  {authUser?.username ? authUser.username : 'Cerrar sesión'}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onGoLogin}
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
-                >
-                  Iniciar sesión
-                </button>
-              )}
             </div>
 
             <NotificationDropdown

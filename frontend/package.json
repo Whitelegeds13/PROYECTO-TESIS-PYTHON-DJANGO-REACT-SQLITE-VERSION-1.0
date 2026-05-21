@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:with-diagrams": "node ../tools/watch_diagrams.mjs & vite",
     "build": "vite build",
+    "diagrams": "python3 ../tools/generate_diagrams.py",
+    "diagrams:watch": "node ../tools/watch_diagrams.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
