@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { addToCart, getCart, getNotifications, login } from './api/client.js'
+import { addToCart, getAccessToken, getCart, getNotifications, login } from './api/client.js'
 import Footer from './components/Footer.jsx'
 import Header from './components/Header.jsx'
 import Home from './pages/Home.jsx'
@@ -27,6 +27,10 @@ export default function App() {
   )
 
   async function refreshCart() {
+    if (!getAccessToken()) {
+      setCart({ count: 0, subtotal: '0.00', items: [] })
+      return
+    }
     try {
       setCartLoading(true)
       const data = await getCart()
@@ -39,6 +43,10 @@ export default function App() {
   }
 
   async function refreshNotifications() {
+    if (!getAccessToken()) {
+      setNotifications([])
+      return
+    }
     try {
       setNotificationsLoading(true)
       const data = await getNotifications()

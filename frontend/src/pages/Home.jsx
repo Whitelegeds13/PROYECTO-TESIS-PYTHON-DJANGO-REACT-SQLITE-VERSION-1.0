@@ -5,9 +5,12 @@ import { getCategories, getProducts } from '../api/client.js'
 import CategoryCard from '../components/CategoryCard.jsx'
 import ProductCard from '../components/ProductCard.jsx'
 
+const HERO_MEDIA_IMAGE = '/media/Gemini_Generated_Image_xf27exf27exf27ex.png'
+
 function imgSrc(dataUri) {
   if (!dataUri) return null
   if (dataUri.startsWith('data:')) return dataUri
+  if (dataUri.startsWith('/') || dataUri.startsWith('http://') || dataUri.startsWith('https://')) return dataUri
   return `data:image/png;base64,${dataUri}`
 }
 
@@ -20,11 +23,8 @@ export default function Home({ onAddToCart }) {
   const [loading, setLoading] = useState(true)
 
   const heroImg = useMemo(() => {
-    const p = offers?.[0]
-    if (p?.image_base64) return p.image_base64
-    const c = categories?.[0]
-    return c?.image_base64 || null
-  }, [offers, categories])
+    return HERO_MEDIA_IMAGE
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -101,28 +101,7 @@ export default function Home({ onAddToCart }) {
             </div>
           </div>
 
-          <div className="hidden md:block">
-            <div className="h-full rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 via-cyan-400/10 to-sky-400/10 p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-extrabold tracking-widest text-white/60">PROTOCOLO</div>
-                <div className="h-2 w-2 rounded-full bg-fuchsia-400 shadow-[0_0_16px_rgba(168,85,247,0.7)]" />
-              </div>
-              <div className="mt-4 text-sm text-white/60">
-                Setup oscuro, bordes glass, acentos neón y catálogo desde SQLite.
-              </div>
-              <div className="mt-6 grid gap-3">
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-                  Ofertas del Protocolo
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-                  Categorías Destacadas
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-                  Mis Pedidos y tracking
-                </div>
-              </div>
-            </div>
-          </div>
+          <div className="hidden md:block" />
         </div>
       </section>
 
@@ -233,4 +212,3 @@ export default function Home({ onAddToCart }) {
     </div>
   )
 }
-
