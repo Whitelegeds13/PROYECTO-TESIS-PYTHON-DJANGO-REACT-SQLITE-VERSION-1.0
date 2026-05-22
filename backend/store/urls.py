@@ -3,11 +3,14 @@ from django.urls import path
 from .views import (
     CartAddView,
     CartClearView,
+    CartItemDeleteView,
     CartView,
     CategoryListView,
+    EmployeeProductListCreateView,
     MeView,
     NotificationListView,
     OrderListView,
+    ProductDetailView,
     ProductListView,
     RegisterView,
 )
@@ -15,10 +18,13 @@ from .views import (
 urlpatterns = [
     path('categories/', CategoryListView.as_view(), name='categories'),
     path('products/', ProductListView.as_view(), name='products'),
+    path('products/<slug:slug>/', ProductDetailView.as_view(), name='product_detail'),
+    path('employee/products/', EmployeeProductListCreateView.as_view(), name='employee_products'),
     path('orders/', OrderListView.as_view(), name='orders'),
     path('notifications/', NotificationListView.as_view(), name='notifications'),
     path('cart/', CartView.as_view(), name='cart'),
     path('cart/add/', CartAddView.as_view(), name='cart_add'),
+    path('cart/items/<int:pk>/', CartItemDeleteView.as_view(), name='cart_item_delete'),
     path('cart/clear/', CartClearView.as_view(), name='cart_clear'),
     path('auth/register/', RegisterView.as_view(), name='auth_register'),
     path('auth/me/', MeView.as_view(), name='auth_me'),

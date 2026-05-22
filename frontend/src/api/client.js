@@ -2,6 +2,7 @@ const API_BASE = ''
 
 const ACCESS_KEY = 'pg_access'
 const REFRESH_KEY = 'pg_refresh'
+const EMPLOYEE_KEY = 'pg_employee'
 
 export function getAccessToken() {
   return localStorage.getItem(ACCESS_KEY) || ''
@@ -12,9 +13,42 @@ export function setTokens({ access, refresh }) {
   if (refresh) localStorage.setItem(REFRESH_KEY, refresh)
 }
 
+export function setEmployeeSession(enabled) {
+  if (enabled) localStorage.setItem(EMPLOYEE_KEY, '1')
+  else localStorage.removeItem(EMPLOYEE_KEY)
+}
+
+export function isEmployeeSession() {
+  return (localStorage.getItem(EMPLOYEE_KEY) || '') === '1'
+}
+
 export function clearTokens() {
   localStorage.removeItem(ACCESS_KEY)
   localStorage.removeItem(REFRESH_KEY)
+  localStorage.removeItem(EMPLOYEE_KEY)
+}
+
+function safeJsonParse(text) {
+  if (!text) return null
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+
+function extractErrorMessage(data, fallback) {
+  if (data?.detail) return String(data.detail)
+  if (data && typeof data === 'object') {
+    const keys = Object.keys(data)
+    if (keys.length) {
+      const k = keys[0]
+      const v = data[k]
+      if (Array.isArray(v) && v.length) return `${k}: ${String(v[0])}`
+      if (typeof v === 'string') return `${k}: ${v}`
+    }
+  }
+  return fallback
 }
 
 async function fetchJson(path, options) {
@@ -31,10 +65,34 @@ async function fetchJson(path, options) {
   if (res.status === 204) return null
 
   const text = await res.text()
-  const data = text ? JSON.parse(text) : null
+  const data = safeJsonParse(text)
 
   if (!res.ok) {
-    const message = data?.detail || `HTTP ${res.status}`
+    const message = extractErrorMessage(data, `HTTP ${res.status}`)
+    throw new Error(message)
+  }
+
+  return data
+}
+
+async function fetchFormData(path, formData, options = {}) {
+  const token = getAccessToken()
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: options.method || 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+    body: formData,
+  })
+
+  if (res.status === 204) return null
+
+  const text = await res.text()
+  const data = safeJsonParse(text)
+
+  if (!res.ok) {
+    const message = extractErrorMessage(data, `HTTP ${res.status}`)
     throw new Error(message)
   }
 
@@ -89,6 +147,11 @@ export async function getProducts(params = {}) {
   return fetchJson(`/api/products/${qs ? `?${qs}` : ''}`)
 }
 
+export async function getProductBySlug(slug) {
+  if (!slug) throw new Error('Falta slug')
+  return fetchJson(`/api/products/${encodeURIComponent(String(slug))}/`)
+}
+
 export async function getOrders() {
   return fetchJson('/api/orders/')
 }
@@ -110,4 +173,16 @@ export async function addToCart({ product_id, product_slug, quantity = 1 }) {
 
 export async function clearCart() {
   return fetchJson('/api/cart/clear/', { method: 'DELETE' })
+}
+
+export async function deleteCartItem(id) {
+  return fetchJson(`/api/cart/items/${id}/`, { method: 'DELETE' })
+}
+
+export async function getEmployeeProducts() {
+  return fetchJson('/api/employee/products/')
+}
+
+export async function createEmployeeProduct(formData) {
+  return fetchFormData('/api/employee/products/', formData)
 }

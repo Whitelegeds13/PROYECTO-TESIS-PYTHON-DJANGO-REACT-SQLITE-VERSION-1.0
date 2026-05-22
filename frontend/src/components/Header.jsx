@@ -19,7 +19,13 @@ export default function Header({
   onToggleCart,
   onToggleNotifications,
   onGoLogin,
+  onGoAccount,
+  onLogout,
+  showClientSession,
+  me,
   onSearchSubmit,
+  onRemoveCartItem,
+  onClearCart,
 }) {
   const location = useLocation()
   const [q, setQ] = useState('')
@@ -117,7 +123,7 @@ export default function Header({
 
             <button
               type="button"
-              onClick={onGoLogin}
+              onClick={showClientSession ? onGoAccount : onGoLogin}
               className="rounded-full border border-white/10 bg-white/5 p-2 text-white/80 transition hover:text-white"
               aria-label="Usuario"
             >
@@ -144,10 +150,14 @@ export default function Header({
             <div className="hidden md:block">
               <button
                 type="button"
-                onClick={onGoLogin}
-                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
+                onClick={showClientSession ? onLogout : onGoLogin}
+                className={
+                  showClientSession
+                    ? 'rounded-full bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-500'
+                    : 'rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white'
+                }
               >
-                Iniciar sesión
+                {showClientSession ? 'Cerrar sesión' : 'Iniciar sesión'}
               </button>
             </div>
 
@@ -156,7 +166,13 @@ export default function Header({
               loading={notificationsLoading}
               notifications={notifications}
             />
-            <CartDropdown open={cartOpen} loading={cartLoading} cart={cart} />
+            <CartDropdown
+              open={cartOpen}
+              loading={cartLoading}
+              cart={cart}
+              onRemoveItem={onRemoveCartItem}
+              onClear={onClearCart}
+            />
           </div>
         </div>
       </div>

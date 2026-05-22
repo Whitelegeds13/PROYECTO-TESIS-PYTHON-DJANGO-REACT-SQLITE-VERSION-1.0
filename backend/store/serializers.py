@@ -19,6 +19,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -39,6 +40,38 @@ class ProductSerializer(serializers.ModelSerializer):
             'rating',
             'reviews_count',
             'image_base64',
+            'image_url',
+            'is_offer',
+            'is_featured',
+        ]
+
+    def get_image_url(self, obj):
+        if getattr(obj, 'image_file', None):
+            try:
+                return obj.image_file.url
+            except Exception:
+                return None
+        return None
+
+
+class EmployeeProductCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = [
+            'name',
+            'brand',
+            'product_type',
+            'category',
+            'description',
+            'specs',
+            'price',
+            'old_price',
+            'discount_percent',
+            'stock',
+            'status',
+            'rating',
+            'reviews_count',
+            'image_file',
             'is_offer',
             'is_featured',
         ]
@@ -84,7 +117,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             'id',
             'product_name',
             'product_image_base64',
+            'product_image_url',
             'quantity',
             'price',
         ]
-

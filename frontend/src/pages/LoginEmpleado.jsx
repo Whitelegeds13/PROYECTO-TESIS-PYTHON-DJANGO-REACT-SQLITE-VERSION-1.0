@@ -1,7 +1,7 @@
 import { KeyRound, ShieldCheck, UserCog } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { clearTokens, getAccessToken, getMe, loginEmployee } from '../api/client.js'
+import { clearTokens, getAccessToken, getMe, loginEmployee, setEmployeeSession } from '../api/client.js'
 
 const BG_MEDIA_IMAGE = '/media/Gemini_Generated_Image_xf27exf27exf27ex.png'
 
@@ -35,12 +35,13 @@ export default function LoginEmpleado() {
       try {
         const me = await getMe()
         if (me?.is_staff) {
+          setEmployeeSession(true)
           navigate('/empleado/dashboard', { replace: true })
         } else {
-          clearTokens()
+          setEmployeeSession(false)
         }
       } catch {
-        clearTokens()
+        setEmployeeSession(false)
       }
     }
     check()
@@ -56,10 +57,11 @@ export default function LoginEmpleado() {
       try {
         const me = await getMe()
         if (!me?.is_staff) {
-          clearTokens()
-          setError('Credenciales incorrectas. Verifica tu ID de empleado o código de acceso.')
+          setEmployeeSession(false)
+          setError('Esta cuenta es de cliente. Tu sesión de cliente se mantiene activa.')
           return
         }
+        setEmployeeSession(true)
       } catch {
         clearTokens()
         setError('No se pudo conectar con el servidor.')

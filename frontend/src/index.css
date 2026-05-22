@@ -17,3 +17,11 @@ body {
   color: #eaf2ff;
 }
 
+select.pg-select {
+  color-scheme: dark;
+}
+
+select.pg-select option {
+  background-color: #0b1226;
+  color: rgba(234, 242, 255, 0.9);
+}

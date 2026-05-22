@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { addToCart, clearTokens, getAccessToken, getCart, getNotifications, login } from './api/client.js'
+import {
+  addToCart,
+  clearCart,
+  clearTokens,
+  deleteCartItem,
+  getAccessToken,
+  getCart,
+  getMe,
+  getNotifications,
+  isEmployeeSession,
+  login,
+  setEmployeeSession,
+} from './api/client.js'
 import Footer from './components/Footer.jsx'
 import Header from './components/Header.jsx'
 import Home from './pages/Home.jsx'
@@ -9,8 +21,12 @@ import LoginChoice from './pages/LoginChoice.jsx'
 import Login from './pages/Login.jsx'
 import LoginEmpleado from './pages/LoginEmpleado.jsx'
 import Orders from './pages/Orders.jsx'
+import Cart from './pages/Cart.jsx'
+import ProductDetail from './pages/ProductDetail.jsx'
 import EmployeeLayout from './pages/empleado/EmployeeLayout.jsx'
 import EmployeeSection from './pages/empleado/EmployeeSection.jsx'
+import EmployeeProductCreate from './pages/empleado/EmployeeProductCreate.jsx'
+import EmployeeProducts from './pages/empleado/EmployeeProducts.jsx'
 
 export default function App() {
   const navigate = useNavigate()
@@ -24,6 +40,9 @@ export default function App() {
 
   const [notifications, setNotifications] = useState([])
   const [notificationsLoading, setNotificationsLoading] = useState(false)
+
+  const [me, setMe] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
 
   const notifNewCount = useMemo(
     () => notifications.filter((n) => n.is_new).length,
@@ -74,6 +93,22 @@ export default function App() {
     }
   }
 
+  async function handleRemoveCartItem(id) {
+    try {
+      await deleteCartItem(id)
+    } finally {
+      await refreshCart()
+    }
+  }
+
+  async function handleClearCart() {
+    try {
+      await clearCart()
+    } finally {
+      await refreshCart()
+    }
+  }
+
   function handleSearchSubmit(q) {
     const query = (q || '').trim()
     navigate(`/hardware${query ? `?search=${encodeURIComponent(query)}` : ''}`)
@@ -85,18 +120,55 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    let mounted = true
+    async function loadMe() {
+      if (!getAccessToken()) {
+        setMe(null)
+        setAuthReady(true)
+        return
+      }
+      try {
+        const data = await getMe()
+        if (!mounted) return
+        setMe(data || null)
+        if (data?.is_staff) setEmployeeSession(true)
+        else setEmployeeSession(false)
+        setAuthReady(true)
+      } catch {
+        if (!mounted) return
+        clearTokens()
+        setMe(null)
+        setAuthReady(true)
+      }
+    }
+    loadMe()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
     setCartOpen(false)
     setNotificationsOpen(false)
   }, [location.pathname])
 
   async function handleClientLogin({ username, password }) {
     await login({ username, password })
+    setEmployeeSession(false)
+    try {
+      const data = await getMe()
+      setMe(data || null)
+    } catch {
+      setMe(null)
+    }
   }
 
   function ProtectedEmployeeRoute({ children }) {
-    if (!getAccessToken()) return <Navigate to="/login-empleado" replace />
+    if (!getAccessToken() || !isEmployeeSession()) return <Navigate to="/login-empleado" replace />
     return children
   }
+
+  const clientLoggedIn = Boolean(authReady && getAccessToken() && !isEmployeeSession())
 
   return (
     <div className="min-h-full">
@@ -121,13 +193,25 @@ export default function App() {
           if (next) refreshNotifications()
         }}
         onGoLogin={() => navigate('/iniciar-sesion')}
+        onGoAccount={() => navigate('/mis-pedidos')}
+        onLogout={() => {
+          clearTokens()
+          setMe(null)
+          navigate('/', { replace: true })
+        }}
+        showClientSession={clientLoggedIn}
+        me={me}
         onSearchSubmit={handleSearchSubmit}
+        onRemoveCartItem={handleRemoveCartItem}
+        onClearCart={handleClearCart}
       />
 
       <main className="pt-20">
         <Routes>
           <Route path="/" element={<Home onAddToCart={handleAddToCart} />} />
           <Route path="/hardware" element={<Hardware onAddToCart={handleAddToCart} />} />
+          <Route path="/producto/:slug" element={<ProductDetail onAddToCart={handleAddToCart} />} />
+          <Route path="/carrito" element={<Cart cart={cart} loading={cartLoading} onRemoveItem={handleRemoveCartItem} onClear={handleClearCart} />} />
           <Route path="/mis-pedidos" element={<Orders />} />
           <Route path="/iniciar-sesion" element={<LoginChoice />} />
           <Route
@@ -143,6 +227,7 @@ export default function App() {
                 <EmployeeLayout
                   onLogout={() => {
                     clearTokens()
+                    setMe(null)
                     navigate('/login-empleado', { replace: true })
                   }}
                 />
@@ -150,7 +235,8 @@ export default function App() {
             }
           >
             <Route path="dashboard" element={<EmployeeSection title="Dashboard" />} />
-            <Route path="productos" element={<EmployeeSection title="Productos" />} />
+            <Route path="productos" element={<EmployeeProducts />} />
+            <Route path="productos/nuevo" element={<EmployeeProductCreate />} />
             <Route path="ventas" element={<EmployeeSection title="Ventas" />} />
             <Route path="clientes" element={<EmployeeSection title="Clientes" />} />
             <Route path="entregas" element={<EmployeeSection title="Entregas" />} />

@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Plus,
   Box,
   CreditCard,
   Package,
@@ -7,7 +8,7 @@ import {
   Truck,
   Users,
 } from 'lucide-react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 function cx(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -26,8 +27,11 @@ const NAV = [
 
 export default function EmployeeLayout({ onLogout }) {
   const location = useLocation()
+  const navigate = useNavigate()
 
   const current = NAV.find((n) => location.pathname.startsWith(n.to))?.label || 'Panel'
+  const showAddProduct =
+    location.pathname === '/empleado/productos' || location.pathname === '/empleado/productos/'
 
   return (
     <div className="mx-auto max-w-6xl px-4">
@@ -77,13 +81,25 @@ export default function EmployeeLayout({ onLogout }) {
                 <div className="text-xs font-extrabold tracking-widest text-white/40">EMPLEADO</div>
                 <div className="mt-1 text-2xl font-extrabold tracking-tight text-white/90">{current}</div>
               </div>
-              <button
-                type="button"
-                onClick={onLogout}
-                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-extrabold text-white/75 transition hover:bg-white/10 hover:text-white"
-              >
-                Cerrar sesión
-              </button>
+              <div className="flex items-center gap-3">
+                {showAddProduct ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/empleado/productos/nuevo')}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-4 py-2 text-sm font-extrabold text-[#05102a] transition hover:brightness-110"
+                  >
+                    <Plus size={18} />
+                    Agregar producto
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-extrabold text-white/75 transition hover:bg-white/10 hover:text-white"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
             </div>
           </div>
 

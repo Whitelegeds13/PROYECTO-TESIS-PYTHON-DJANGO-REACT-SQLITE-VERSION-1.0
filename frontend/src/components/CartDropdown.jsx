@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 function imgSrc(dataUri) {
   if (!dataUri) return null
   if (dataUri.startsWith('data:')) return dataUri
+  if (dataUri.startsWith('/') || dataUri.startsWith('http://') || dataUri.startsWith('https://')) return dataUri
   return `data:image/png;base64,${dataUri}`
 }
 
-export default function CartDropdown({ open, loading, cart }) {
+export default function CartDropdown({ open, loading, cart, onRemoveItem, onClear }) {
   const items = cart?.items || []
 
   return (
@@ -35,9 +36,9 @@ export default function CartDropdown({ open, loading, cart }) {
                 className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3"
               >
                 <div className="h-10 w-10 overflow-hidden rounded-lg bg-white/5">
-                  {imgSrc(it.product_image_base64) ? (
+                  {imgSrc(it.product_image_url || it.product_image_base64) ? (
                     <img
-                      src={imgSrc(it.product_image_base64)}
+                      src={imgSrc(it.product_image_url || it.product_image_base64)}
                       alt={it.product_name}
                       className="h-full w-full object-cover"
                     />
@@ -51,6 +52,13 @@ export default function CartDropdown({ open, loading, cart }) {
                     {it.quantity} × ${Number(it.price).toFixed(2)}
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => onRemoveItem?.(it.id)}
+                  className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-extrabold text-white/60 transition hover:bg-rose-400/10 hover:text-rose-200"
+                >
+                  Quitar
+                </button>
               </div>
             ))}
           </div>
@@ -64,8 +72,17 @@ export default function CartDropdown({ open, loading, cart }) {
           <span className="text-white/50">Subtotal</span>
           <span className="font-semibold text-white/90">${Number(cart?.subtotal || 0).toFixed(2)}</span>
         </div>
+        {items.length ? (
+          <button
+            type="button"
+            onClick={onClear}
+            className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-extrabold text-white/70 transition hover:bg-white/10 hover:text-white"
+          >
+            Vaciar Carrito
+          </button>
+        ) : null}
         <Link
-          to="/hardware"
+          to="/carrito"
           className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-3 py-2 text-sm font-bold text-[#05102a] transition hover:brightness-110"
         >
           Ver Carrito
@@ -74,4 +91,3 @@ export default function CartDropdown({ open, loading, cart }) {
     </div>
   )
 }
-

@@ -34,6 +34,7 @@ class Product(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
     reviews_count = models.PositiveIntegerField(default=0)
     image_base64 = models.TextField(blank=True)
+    image_file = models.FileField(upload_to='productos/', null=True, blank=True)
     is_offer = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
 
@@ -78,9 +79,9 @@ class Notification(models.Model):
 class CartItem(models.Model):
     product_name = models.CharField(max_length=200)
     product_image_base64 = models.TextField(blank=True)
+    product_image_url = models.CharField(max_length=500, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self) -> str:
         return f'{self.product_name} x{self.quantity}'
-

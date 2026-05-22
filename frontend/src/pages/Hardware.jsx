@@ -5,10 +5,14 @@ import { getProducts } from '../api/client.js'
 import ProductCard from '../components/ProductCard.jsx'
 
 const CATEGORY_MAP = [
-  { key: 'gpus', label: 'GPUs (Gráficas)', slug: 'tarjetas-graficas' },
-  { key: 'cpus', label: 'CPUs (Procesadores)', slug: 'procesadores' },
-  { key: 'ram', label: 'Memoria RAM', slug: 'memoria-ram' },
+  { key: 'gpus', label: 'GPU (Grafica)', slug: 'tarjetas-graficas' },
+  { key: 'cpus', label: 'CPUs(Procesadores)', slug: 'procesadores' },
+  { key: 'ram', label: 'Memoria Ram', slug: 'memoria-ram' },
   { key: 'storage', label: 'Almacenamiento', slug: 'almacenamiento' },
+  { key: 'keyboards', label: 'Teclados', slug: 'teclados' },
+  { key: 'psu', label: 'Fuente de poder', slug: 'fuente-de-poder' },
+  { key: 'headsets', label: 'Audifonos', slug: 'audifonos' },
+  { key: 'mobo', label: 'Placa', slug: 'placa' },
 ]
 
 const SORT_OPTIONS = [
@@ -247,7 +251,7 @@ export default function Hardware({ onAddToCart }) {
               <select
                 value={urlSort}
                 onChange={(e) => setSort(e.target.value)}
-                className="rounded-xl border border-white/10 bg-[#071026]/70 px-3 py-2 text-sm text-white/80 outline-none"
+                className="pg-select rounded-xl border border-white/10 bg-[#071026]/70 px-3 py-2 text-sm text-white/80 outline-none"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -321,4 +325,3 @@ export default function Hardware({ onAddToCart }) {
     </div>
   )
 }
-

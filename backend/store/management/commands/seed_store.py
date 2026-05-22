@@ -21,13 +21,17 @@ def _status_from_stock(stock: int):
 
 
 class Command(BaseCommand):
+    def add_arguments(self, parser):
+        parser.add_argument('--reset', action='store_true', help='Borra datos de store antes de aplicar el seed.')
+
     def handle(self, *args, **options):
         with transaction.atomic():
-            CartItem.objects.all().delete()
-            Notification.objects.all().delete()
-            Order.objects.all().delete()
-            Product.objects.all().delete()
-            Category.objects.all().delete()
+            if options.get('reset'):
+                CartItem.objects.all().delete()
+                Notification.objects.all().delete()
+                Order.objects.all().delete()
+                Product.objects.all().delete()
+                Category.objects.all().delete()
 
             categories = [
                 {
@@ -94,18 +98,52 @@ class Command(BaseCommand):
                     'accent_a': '#A855F7',
                     'accent_b': '#22D3EE',
                 },
+                {
+                    'name': 'Teclados',
+                    'subtitle': 'Mecánicos, inalámbricos y RGB',
+                    'slug': 'teclados',
+                    'layout_type': 'md',
+                    'accent_a': '#FB7185',
+                    'accent_b': '#22D3EE',
+                },
+                {
+                    'name': 'Audífonos',
+                    'subtitle': 'Audio surround, baja latencia y micrófono pro',
+                    'slug': 'audifonos',
+                    'layout_type': 'md',
+                    'accent_a': '#22D3EE',
+                    'accent_b': '#FB7185',
+                },
+                {
+                    'name': 'Fuente de poder',
+                    'subtitle': 'Modulares y certificación alta',
+                    'slug': 'fuente-de-poder',
+                    'layout_type': 'md',
+                    'accent_a': '#22D3EE',
+                    'accent_b': '#A855F7',
+                },
+                {
+                    'name': 'Placa',
+                    'subtitle': 'Chipsets gaming y VRM reforzado',
+                    'slug': 'placa',
+                    'layout_type': 'md',
+                    'accent_a': '#A855F7',
+                    'accent_b': '#0EA5E9',
+                },
             ]
 
             created_categories = {}
             for c in categories:
                 image = _svg_data_uri(c['name'], c['subtitle'], c['accent_a'], c['accent_b'])
-                cat = Category.objects.create(
-                    name=c['name'],
+                cat, _created = Category.objects.update_or_create(
                     slug=c['slug'],
-                    subtitle=c['subtitle'],
-                    image_base64=image,
-                    is_featured=True,
-                    layout_type=c['layout_type'],
+                    defaults={
+                        'name': c['name'],
+                        'subtitle': c['subtitle'],
+                        'image_base64': image,
+                        'is_featured': True,
+                        'layout_type': c['layout_type'],
+                    },
                 )
                 created_categories[cat.slug] = cat
 
@@ -120,15 +158,40 @@ class Command(BaseCommand):
             )
             if not employee.is_staff:
                 employee.is_staff = True
+            if getattr(employee, 'is_superuser', False):
+                employee.is_superuser = False
             if employee.email != employee_email:
                 employee.email = employee_email
             employee.set_password(employee_password)
-            employee.save(update_fields=['is_staff', 'email', 'password'])
+            employee_update_fields = ['is_staff', 'email', 'password']
+            if hasattr(employee, 'is_superuser'):
+                employee_update_fields.insert(1, 'is_superuser')
+            employee.save(update_fields=employee_update_fields)
+
+            client_username = 'CLT-0000'
+            client_email = 'cliente@palaciogamer.local'
+            client_password = 'PalacioGamerCliente#2026!'
+
+            client, _created_client = User.objects.get_or_create(
+                username=client_username,
+                defaults={'email': client_email, 'is_staff': False},
+            )
+            if getattr(client, 'is_staff', False):
+                client.is_staff = False
+            if getattr(client, 'is_superuser', False):
+                client.is_superuser = False
+            if getattr(client, 'email', '') != client_email:
+                client.email = client_email
+            client.set_password(client_password)
+            client_update_fields = ['is_staff', 'email', 'password']
+            if hasattr(client, 'is_superuser'):
+                client_update_fields.insert(1, 'is_superuser')
+            client.save(update_fields=client_update_fields)
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    'Seed completado: categorías creadas (sin productos ni imágenes). '
-                    f'Empleado creado/asegurado: {employee_username}'
+                    'Seed completado: categorías aseguradas y usuarios creados/asegurados. '
+                    f'Empleado: {employee_username} | Cliente: {client_username}'
                 )
             )
             return

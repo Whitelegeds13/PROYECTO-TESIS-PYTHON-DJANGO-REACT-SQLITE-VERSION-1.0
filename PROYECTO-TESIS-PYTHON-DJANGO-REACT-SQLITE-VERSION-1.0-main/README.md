@@ -13,6 +13,68 @@ Web para gestión de ventas y almacén/inventario.
 - `backend/` → Django + SQLite (API y panel administrativo)
 - `frontend/` → React (Vite) + Tailwind CSS
 
+## Cómo correr (rápido)
+
+### Backend (Django)
+
+Windows / PowerShell:
+
+```powershell
+.\venv\Scripts\python backend\manage.py migrate
+.\venv\Scripts\python backend\manage.py seed_store
+.\venv\Scripts\python backend\manage.py runserver
+```
+
+Linux / macOS (Bash):
+
+```bash
+. venv/bin/activate
+python3 backend/manage.py migrate
+python3 backend/manage.py seed_store
+python3 backend/manage.py runserver
+```
+
+### Frontend (React)
+
+En otra terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Si hay cambios (actualizar y correr)
+
+1) Detén el backend y el frontend (Ctrl + C en cada terminal).
+
+2) Backend (aplicar cambios de BD y seed):
+
+Windows / PowerShell:
+
+```powershell
+.\venv\Scripts\python backend\manage.py migrate
+.\venv\Scripts\python backend\manage.py seed_store
+.\venv\Scripts\python backend\manage.py runserver
+```
+
+Linux / macOS (Bash):
+
+```bash
+. venv/bin/activate
+python3 backend/manage.py migrate
+python3 backend/manage.py seed_store
+python3 backend/manage.py runserver
+```
+
+3) Frontend (si cambió algo del frontend o dependencias):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
 ## Instalación (Windows / PowerShell)
 
 ### 1) Backend (Django + SQLite)
@@ -23,7 +85,6 @@ Desde la carpeta raíz del proyecto:
 py -m venv venv
 .\venv\Scripts\python -m pip install --upgrade pip
 .\venv\Scripts\python -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
-.\venv\Scripts\python backend\manage.py makemigrations
 .\venv\Scripts\python backend\manage.py migrate
 .\venv\Scripts\python backend\manage.py seed_store
 .\venv\Scripts\python backend\manage.py runserver
@@ -44,10 +105,17 @@ Si necesitas entrar al admin, crea un superusuario (opcional):
 .\venv\Scripts\python backend\manage.py createsuperuser
 ```
 
-Seed (Palacio Gamer):
+Seed (Palacio Gamer / Panel Empleado):
 
-- Comando: `python manage.py seed_store`
-- Qué hace: borra y recrea datos de la app `store` (categorías destacadas, 32 productos, pedidos, notificaciones y carrito) con imágenes en base64 guardadas en SQLite.
+- Comando: `python backend\manage.py seed_store`
+- Qué hace (idempotente): asegura categorías base y crea/asegura el empleado de prueba:
+  - Empleado (username): `GMR-0000`
+  - Código de acceso (password): `PalacioGamer#2026!`
+- Para borrar datos de `store` antes de sembrar, usa:
+
+```powershell
+.\venv\Scripts\python backend\manage.py seed_store --reset
+```
 
 ### 2) Frontend (React + Tailwind)
 
@@ -82,7 +150,6 @@ python3 -m venv venv
 . venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
-python3 backend/manage.py makemigrations
 python3 backend/manage.py migrate
 python3 backend/manage.py seed_store
 python3 backend/manage.py runserver
@@ -96,7 +163,18 @@ Si el backend está arriba, deberías poder abrir:
 Si necesitas entrar al admin, crea un superusuario (opcional):
 
 ```bash
-python backend/manage.py createsuperuser
+python3 backend/manage.py createsuperuser
+```
+
+Seed (Palacio Gamer / Panel Empleado):
+
+- Qué hace (idempotente): asegura categorías base y crea/asegura el empleado de prueba:
+  - Empleado (username): `GMR-0000`
+  - Código de acceso (password): `PalacioGamer#2026!`
+- Para borrar datos de `store` antes de sembrar:
+
+```bash
+python3 backend/manage.py seed_store --reset
 ```
 
 ### 2) Frontend (React + Tailwind)
@@ -123,4 +201,8 @@ Notas:
 
 1. Inicia el backend (Django) en `http://127.0.0.1:8000`.
 2. Inicia el frontend (React) en `http://localhost:5173`.
-3. Abre el Home en `http://localhost:5173/` y navega a `/hardware` y `/mis-pedidos`.
+3. Home público: `http://localhost:5173/`
+4. Login empleado: `http://localhost:5173/login-empleado` → redirige a `/empleado/dashboard` después de iniciar sesión.
+5. Panel empleado:
+   - Productos: `http://localhost:5173/empleado/productos`
+   - Nuevo producto: `http://localhost:5173/empleado/productos/nuevo` (sube imágenes a `backend/media/productos/`)
