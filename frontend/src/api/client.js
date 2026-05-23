@@ -67,6 +67,24 @@ async function fetchJson(path, options) {
   const text = await res.text()
   const data = safeJsonParse(text)
 
+  if (res.status === 401) {
+    const refresh = localStorage.getItem(REFRESH_KEY) || ''
+    if (refresh && path !== '/api/token/refresh/') {
+      try {
+        const refreshed = await fetchJson('/api/token/refresh/', {
+          method: 'POST',
+          body: JSON.stringify({ refresh }),
+        })
+        if (refreshed?.access) {
+          setTokens({ access: refreshed.access })
+          return fetchJson(path, options)
+        }
+      } catch {
+        clearTokens()
+      }
+    }
+  }
+
   if (!res.ok) {
     const message = extractErrorMessage(data, `HTTP ${res.status}`)
     throw new Error(message)
@@ -90,6 +108,24 @@ async function fetchFormData(path, formData, options = {}) {
 
   const text = await res.text()
   const data = safeJsonParse(text)
+
+  if (res.status === 401) {
+    const refresh = localStorage.getItem(REFRESH_KEY) || ''
+    if (refresh && path !== '/api/token/refresh/') {
+      try {
+        const refreshed = await fetchJson('/api/token/refresh/', {
+          method: 'POST',
+          body: JSON.stringify({ refresh }),
+        })
+        if (refreshed?.access) {
+          setTokens({ access: refreshed.access })
+          return fetchFormData(path, formData, options)
+        }
+      } catch {
+        clearTokens()
+      }
+    }
+  }
 
   if (!res.ok) {
     const message = extractErrorMessage(data, `HTTP ${res.status}`)
@@ -123,10 +159,10 @@ export async function refreshToken() {
   return data
 }
 
-export async function register({ username, email, password }) {
+export async function register({ full_name, email, password }) {
   return fetchJson('/api/auth/register/', {
     method: 'POST',
-    body: JSON.stringify({ username, email, password }),
+    body: JSON.stringify({ full_name, email, password }),
   })
 }
 
@@ -177,6 +213,21 @@ export async function clearCart() {
 
 export async function deleteCartItem(id) {
   return fetchJson(`/api/cart/items/${id}/`, { method: 'DELETE' })
+}
+
+export async function updateCartItemQuantity(id, quantity) {
+  return fetchJson(`/api/cart/items/${id}/update/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ quantity }),
+  })
+}
+
+export async function checkout() {
+  return fetchJson('/api/checkout/', { method: 'POST' })
+}
+
+export async function createPayment(formData) {
+  return fetchFormData('/api/payments/', formData)
 }
 
 export async function getEmployeeProducts() {

@@ -187,8 +187,8 @@ export default function Hardware({ onAddToCart }) {
                   className="w-full accent-fuchsia-400"
                 />
                 <div className="mt-2 flex items-center justify-between text-xs text-white/50">
-                  <span>$0</span>
-                  <span>${maxPrice.toLocaleString()}+</span>
+                  <span>S/ 0</span>
+                  <span>S/ {maxPrice.toLocaleString()}+</span>
                 </div>
               </div>
             </div>

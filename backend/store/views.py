@@ -1,7 +1,9 @@
 from decimal import Decimal
+import uuid
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import validate_email
 from django.db.models import Q
 from django.utils.text import slugify
 from rest_framework import generics, status
@@ -9,8 +11,10 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import CartItem, Category, Notification, Order, Product
+from .models import CartItem, Category, Notification, Order, Payment, Product
 from .serializers import (
     CartItemSerializer,
     CategorySerializer,
@@ -145,24 +149,25 @@ class ProductDetailView(generics.RetrieveAPIView):
 
 
 class OrderListView(generics.ListAPIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = OrderSerializer
-    queryset = Order.objects.all().order_by('-id')
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).order_by('-id')
 
 
 class NotificationListView(generics.ListAPIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
-    queryset = Notification.objects.all().order_by('-is_new', '-id')
+
+    def get_queryset(self):
+        return Notification.objects.all().order_by('-is_new', '-id')
 
 
 class CartView(APIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        items = list(CartItem.objects.all().order_by('id'))
+        items = list(CartItem.objects.filter(user=request.user).order_by('id'))
         subtotal = sum((item.price * item.quantity for item in items), Decimal('0.00'))
         count = sum((item.quantity for item in items), 0)
         return Response(
@@ -175,8 +180,7 @@ class CartView(APIView):
 
 
 class CartAddView(APIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         payload = request.data or {}
 
@@ -204,6 +208,7 @@ class CartAddView(APIView):
 
             item, created = CartItem.objects.get_or_create(
                 product_name=product.name,
+                user=request.user,
                 defaults={
                     'product_image_base64': product.image_base64 or '',
                     'product_image_url': getattr(getattr(product, 'image_file', None), 'url', '') or '',
@@ -234,6 +239,7 @@ class CartAddView(APIView):
             image_url = str(payload.get('product_image_url') or '').strip()
             item, created = CartItem.objects.get_or_create(
                 product_name=name,
+                user=request.user,
                 defaults={
                     'product_image_base64': image_base64,
                     'product_image_url': image_url,
@@ -250,7 +256,7 @@ class CartAddView(APIView):
                     item.product_image_url = image_url
                 item.save(update_fields=['quantity', 'price', 'product_image_base64', 'product_image_url'])
 
-        items = list(CartItem.objects.all().order_by('id'))
+        items = list(CartItem.objects.filter(user=request.user).order_by('id'))
         subtotal = sum((ci.price * ci.quantity for ci in items), Decimal('0.00'))
         count = sum((ci.quantity for ci in items), 0)
         return Response(
@@ -263,19 +269,165 @@ class CartAddView(APIView):
 
 
 class CartClearView(APIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def delete(self, request):
-        CartItem.objects.all().delete()
+        CartItem.objects.filter(user=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CartItemDeleteView(APIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def delete(self, request, pk: int):
-        CartItem.objects.filter(id=pk).delete()
+        CartItem.objects.filter(id=pk, user=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CartItemUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk: int):
+        payload = request.data or {}
+        quantity = payload.get('quantity')
+        try:
+            quantity = int(quantity)
+        except (TypeError, ValueError):
+            return Response({'detail': 'quantity inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if quantity < 1:
+            return Response({'detail': 'quantity debe ser >= 1.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        updated = CartItem.objects.filter(id=pk, user=request.user).update(quantity=quantity)
+        if not updated:
+            return Response({'detail': 'Item no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CheckoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        items = list(CartItem.objects.filter(user=request.user).order_by('id'))
+        if not items:
+            return Response({'detail': 'El carrito está vacío.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        created_ids = []
+        for it in items:
+            order_code = uuid.uuid4().hex[:10].upper()
+            while Order.objects.filter(order_code=order_code).exists():
+                order_code = uuid.uuid4().hex[:10].upper()
+
+            total = (it.price or Decimal('0.00')) * int(it.quantity or 0)
+            order = Order.objects.create(
+                user=request.user,
+                order_code=order_code,
+                product_name=it.product_name,
+                product_description='',
+                product_image_base64=it.product_image_base64 or '',
+                quantity=int(it.quantity or 1),
+                total=total,
+                status=Order.Status.PROCESANDO,
+                date_label='',
+                extra_info='',
+                can_download_invoice=False,
+                can_track=False,
+                can_cancel=True,
+            )
+            created_ids.append(order.id)
+
+        CartItem.objects.filter(user=request.user).delete()
+        return Response({'created': created_ids}, status=status.HTTP_201_CREATED)
+
+
+class PaymentCreateView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        payload = request.data or {}
+        method = str(payload.get('method') or '').strip().lower()
+        if method not in {Payment.Method.CARD, Payment.Method.BANK_TRANSFER}:
+            return Response({'detail': 'Método de pago inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        items = list(CartItem.objects.filter(user=request.user).order_by('id'))
+        if not items:
+            return Response({'detail': 'El carrito está vacío.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        subtotal = sum(((it.price or Decimal('0.00')) * int(it.quantity or 0) for it in items), Decimal('0.00'))
+        shipping = Decimal('0.00')
+        igv = subtotal * Decimal('0.18')
+        total = subtotal + shipping + igv
+
+        payment = Payment.objects.create(
+            user=request.user,
+            method=method,
+            status=Payment.Status.CONFIRMED if method == Payment.Method.CARD else Payment.Status.PENDING,
+            subtotal=subtotal,
+            shipping=shipping,
+            igv=igv,
+            total=total,
+        )
+
+        if method == Payment.Method.CARD:
+            card_holder_name = str(payload.get('card_holder_name') or '').strip()
+            card_number = str(payload.get('card_number') or '').strip().replace(' ', '')
+            card_expiry = str(payload.get('card_expiry') or '').strip()
+            card_cvv = str(payload.get('card_cvv') or '').strip()
+
+            if not card_holder_name or not card_number or not card_expiry or not card_cvv:
+                payment.delete()
+                return Response({'detail': 'Completa los datos de la tarjeta.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            digits = ''.join([c for c in card_number if c.isdigit()])
+            if len(digits) < 12:
+                payment.delete()
+                return Response({'detail': 'Número de tarjeta inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            payment.card_holder_name = card_holder_name
+            payment.card_last4 = digits[-4:]
+            payment.card_expiry = card_expiry[:7]
+            payment.save(update_fields=['card_holder_name', 'card_last4', 'card_expiry'])
+        else:
+            receipt = request.FILES.get('receipt_file')
+            if not receipt:
+                payment.delete()
+                return Response({'detail': 'Sube el comprobante.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            payment.bank_name = 'BCP Soles'
+            payment.bank_account = '193-94827163-0-12'
+            payment.bank_cci = '002-193009482716301211'
+            payment.receipt_file = receipt
+            payment.save(update_fields=['bank_name', 'bank_account', 'bank_cci', 'receipt_file'])
+
+        created_ids = []
+        for it in items:
+            order_code = uuid.uuid4().hex[:10].upper()
+            while Order.objects.filter(order_code=order_code).exists():
+                order_code = uuid.uuid4().hex[:10].upper()
+
+            line_total = (it.price or Decimal('0.00')) * int(it.quantity or 0)
+            order = Order.objects.create(
+                user=request.user,
+                payment=payment,
+                order_code=order_code,
+                product_name=it.product_name,
+                product_description='',
+                product_image_base64=it.product_image_base64 or '',
+                quantity=int(it.quantity or 1),
+                total=line_total,
+                status=Order.Status.PROCESANDO,
+                date_label='',
+                extra_info='',
+                can_download_invoice=False,
+                can_track=False,
+                can_cancel=True,
+            )
+            created_ids.append(order.id)
+
+        CartItem.objects.filter(user=request.user).delete()
+        return Response({'payment_id': payment.id, 'created': created_ids}, status=status.HTTP_201_CREATED)
 
 
 class RegisterView(APIView):
@@ -284,14 +436,21 @@ class RegisterView(APIView):
 
     def post(self, request):
         payload = request.data or {}
-        username = str(payload.get('username') or '').strip()
+        full_name = str(payload.get('full_name') or '').strip()
         email = str(payload.get('email') or '').strip()
         password = str(payload.get('password') or '')
 
-        if not username:
-            return Response({'detail': 'username es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not full_name:
+            return Response({'detail': 'El nombre completo es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not email:
+            return Response({'detail': 'El correo es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
         if not password:
             return Response({'detail': 'password es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_email(email)
+        except Exception:
+            return Response({'detail': 'Correo inválido.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             validate_password(password)
@@ -300,13 +459,30 @@ class RegisterView(APIView):
             return Response({'detail': msg}, status=status.HTTP_400_BAD_REQUEST)
 
         User = get_user_model()
-        if User.objects.filter(username=username).exists():
-            return Response({'detail': 'El username ya existe.'}, status=status.HTTP_400_BAD_REQUEST)
-        if email and User.objects.filter(email=email).exists():
-            return Response({'detail': 'El email ya existe.'}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(email__iexact=email).exists():
+            return Response({'detail': 'El correo ya existe.'}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(username__iexact=email).exists():
+            return Response({'detail': 'El correo ya existe.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.create_user(username=username, email=email or '', password=password)
+        user = User.objects.create_user(username=email, email=email, password=password)
+        user.first_name = full_name
+        user.save(update_fields=['first_name'])
         return Response({'id': user.id, 'username': user.username, 'email': user.email}, status=status.HTTP_201_CREATED)
+
+
+class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        raw = str(attrs.get('username') or '').strip()
+        if raw and '@' in raw:
+            User = get_user_model()
+            u = User.objects.filter(email__iexact=raw).first()
+            if u:
+                attrs['username'] = u.get_username()
+        return super().validate(attrs)
+
+
+class EmailOrUsernameTokenObtainPairView(TokenObtainPairView):
+    serializer_class = EmailOrUsernameTokenObtainPairSerializer
 
 
 class MeView(APIView):

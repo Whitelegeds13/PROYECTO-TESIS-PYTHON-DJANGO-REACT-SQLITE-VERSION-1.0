@@ -20,6 +20,7 @@ Web para gestión de ventas y almacén/inventario.
 Windows / PowerShell:
 
 ```powershell
+
 .\venv\Scripts\python backend\manage.py migrate
 .\venv\Scripts\python backend\manage.py seed_store
 .\venv\Scripts\python backend\manage.py runserver

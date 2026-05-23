@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 
 class Category(models.Model):
@@ -49,6 +50,8 @@ class Order(models.Model):
         PROCESANDO = 'procesando', 'Procesando'
 
     order_code = models.CharField(max_length=32, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='orders')
+    payment = models.ForeignKey('Payment', null=True, blank=True, on_delete=models.SET_NULL, related_name='orders')
     product_name = models.CharField(max_length=200)
     product_description = models.TextField(blank=True)
     product_image_base64 = models.TextField(blank=True)
@@ -65,6 +68,39 @@ class Order(models.Model):
         return self.order_code
 
 
+class Payment(models.Model):
+    class Method(models.TextChoices):
+        CARD = 'card', 'Tarjeta'
+        BANK_TRANSFER = 'bank_transfer', 'Transferencia Bancaria'
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pendiente'
+        CONFIRMED = 'confirmed', 'Confirmado'
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='payments')
+    method = models.CharField(max_length=32, choices=Method.choices)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    shipping = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    igv = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    card_holder_name = models.CharField(max_length=120, blank=True)
+    card_last4 = models.CharField(max_length=4, blank=True)
+    card_expiry = models.CharField(max_length=7, blank=True)
+
+    bank_name = models.CharField(max_length=64, blank=True)
+    bank_account = models.CharField(max_length=64, blank=True)
+    bank_cci = models.CharField(max_length=64, blank=True)
+    receipt_file = models.FileField(upload_to='comprobantes/', null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f'{self.method} {self.status} #{self.id}'
+
+
 class Notification(models.Model):
     title = models.CharField(max_length=120)
     message = models.CharField(max_length=260)
@@ -77,6 +113,7 @@ class Notification(models.Model):
 
 
 class CartItem(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name='cart_items')
     product_name = models.CharField(max_length=200)
     product_image_base64 = models.TextField(blank=True)
     product_image_url = models.CharField(max_length=500, blank=True)

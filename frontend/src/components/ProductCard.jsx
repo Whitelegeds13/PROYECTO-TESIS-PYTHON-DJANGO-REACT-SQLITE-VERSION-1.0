@@ -58,11 +58,11 @@ export default function ProductCard({ product, onAddToCart }) {
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>
           {product.old_price ? (
-            <div className="text-xs text-white/40 line-through">${Number(product.old_price).toFixed(2)}</div>
+            <div className="text-xs text-white/40 line-through">S/ {Number(product.old_price).toFixed(2)}</div>
           ) : (
             <div className="text-xs text-white/40">&nbsp;</div>
           )}
-          <div className="text-lg font-extrabold text-white/95">${Number(product.price).toFixed(2)}</div>
+          <div className="text-lg font-extrabold text-white/95">S/ {Number(product.price).toFixed(2)}</div>
           {product.discount_percent ? (
             <div className="mt-1 text-xs font-semibold text-fuchsia-300/90">
               -{product.discount_percent}% OFF

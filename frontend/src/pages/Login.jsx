@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-export default function Login({ onLogin, onRegisterClick, afterLoginPath = '/' }) {
+export default function Login({ onLogin, onLogout, onRegisterClick, afterLoginPath = '/' }) {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -13,7 +13,7 @@ export default function Login({ onLogin, onRegisterClick, afterLoginPath = '/' }
     setError('')
     setLoading(true)
     try {
-      await onLogin({ username: username.trim(), password })
+      await onLogin({ email: email.trim(), password })
       navigate(afterLoginPath)
     } catch (err) {
       setError(err?.message || 'No se pudo iniciar sesión')
@@ -33,13 +33,13 @@ export default function Login({ onLogin, onRegisterClick, afterLoginPath = '/' }
 
         <form onSubmit={submit} className="space-y-4 px-6 py-6">
           <div>
-            <label className="text-xs font-extrabold tracking-widest text-white/50">USUARIO</label>
+            <label className="text-xs font-extrabold tracking-widest text-white/50">CORREO ELECTRÓNICO</label>
             <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/85 outline-none placeholder:text-white/35 focus:border-cyan-300/30"
-              placeholder="tu_usuario"
-              autoComplete="username"
+              placeholder="tucorreo@ejemplo.com"
+              autoComplete="email"
             />
           </div>
           <div>
@@ -71,19 +71,20 @@ export default function Login({ onLogin, onRegisterClick, afterLoginPath = '/' }
             {loading ? 'Ingresando…' : 'Iniciar sesión'}
           </button>
 
-          <div className="flex items-center justify-between pt-2 text-sm">
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => onRegisterClick?.()}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-extrabold text-white/85 transition hover:bg-white/10"
+            >
+              Regístrate aquí
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 text-sm">
             <Link to="/" className="text-white/60 hover:text-white">
               Volver al Home
             </Link>
-            {onRegisterClick ? (
-              <button
-                type="button"
-                onClick={onRegisterClick}
-                className="font-semibold text-cyan-300 hover:text-cyan-200"
-              >
-                Crear cuenta
-              </button>
-            ) : null}
           </div>
         </form>
       </div>

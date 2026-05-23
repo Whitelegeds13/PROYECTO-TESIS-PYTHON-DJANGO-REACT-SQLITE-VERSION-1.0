@@ -147,10 +147,10 @@ export default function ProductDetail({ onAddToCart }) {
               <div className="mt-2 flex items-end justify-between gap-3">
                 <div>
                   <div className="text-3xl font-extrabold text-white/95">
-                    ${Number(product?.price || 0).toFixed(2)}
+                    S/ {Number(product?.price || 0).toFixed(2)}
                   </div>
                   {product?.old_price ? (
-                    <div className="mt-1 text-sm text-white/40 line-through">${Number(product.old_price).toFixed(2)}</div>
+                    <div className="mt-1 text-sm text-white/40 line-through">S/ {Number(product.old_price).toFixed(2)}</div>
                   ) : null}
                   {product?.discount_percent ? (
                     <div className="mt-1 text-xs font-semibold text-fuchsia-300/90">-{product.discount_percent}% OFF</div>
@@ -244,4 +244,3 @@ export default function ProductDetail({ onAddToCart }) {
     </div>
   )
 }
-

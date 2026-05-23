@@ -4,6 +4,7 @@ import {
   addToCart,
   clearCart,
   clearTokens,
+  createPayment,
   deleteCartItem,
   getAccessToken,
   getCart,
@@ -11,7 +12,9 @@ import {
   getNotifications,
   isEmployeeSession,
   login,
+  register,
   setEmployeeSession,
+  updateCartItemQuantity,
 } from './api/client.js'
 import Footer from './components/Footer.jsx'
 import Header from './components/Header.jsx'
@@ -22,7 +25,10 @@ import Login from './pages/Login.jsx'
 import LoginEmpleado from './pages/LoginEmpleado.jsx'
 import Orders from './pages/Orders.jsx'
 import Cart from './pages/Cart.jsx'
+import Checkout from './pages/Checkout.jsx'
+import Payment from './pages/Payment.jsx'
 import ProductDetail from './pages/ProductDetail.jsx'
+import Register from './pages/Register.jsx'
 import EmployeeLayout from './pages/empleado/EmployeeLayout.jsx'
 import EmployeeSection from './pages/empleado/EmployeeSection.jsx'
 import EmployeeProductCreate from './pages/empleado/EmployeeProductCreate.jsx'
@@ -87,7 +93,12 @@ export default function App() {
       await refreshCart()
       setCartOpen(true)
       setNotificationsOpen(false)
-    } catch {
+    } catch (e) {
+      const msg = String(e?.message || '')
+      if (msg.includes('HTTP 401') || msg.toLowerCase().includes('no autorizado') || msg.toLowerCase().includes('not authenticated')) {
+        navigate('/login')
+        return
+      }
       setCartOpen(true)
       setNotificationsOpen(false)
     }
@@ -96,6 +107,14 @@ export default function App() {
   async function handleRemoveCartItem(id) {
     try {
       await deleteCartItem(id)
+    } finally {
+      await refreshCart()
+    }
+  }
+
+  async function handleUpdateCartItemQuantity(id, quantity) {
+    try {
+      await updateCartItemQuantity(id, quantity)
     } finally {
       await refreshCart()
     }
@@ -152,8 +171,8 @@ export default function App() {
     setNotificationsOpen(false)
   }, [location.pathname])
 
-  async function handleClientLogin({ username, password }) {
-    await login({ username, password })
+  async function handleClientLogin({ email, password }) {
+    await login({ username: email, password })
     setEmployeeSession(false)
     try {
       const data = await getMe()
@@ -163,8 +182,18 @@ export default function App() {
     }
   }
 
+  async function handleClientRegister({ full_name, email, password }) {
+    await register({ full_name, email, password })
+    await handleClientLogin({ email, password })
+  }
+
   function ProtectedEmployeeRoute({ children }) {
     if (!getAccessToken() || !isEmployeeSession()) return <Navigate to="/login-empleado" replace />
+    return children
+  }
+
+  function ProtectedClientRoute({ children }) {
+    if (!getAccessToken() || isEmployeeSession()) return <Navigate to="/login" replace />
     return children
   }
 
@@ -212,11 +241,64 @@ export default function App() {
           <Route path="/hardware" element={<Hardware onAddToCart={handleAddToCart} />} />
           <Route path="/producto/:slug" element={<ProductDetail onAddToCart={handleAddToCart} />} />
           <Route path="/carrito" element={<Cart cart={cart} loading={cartLoading} onRemoveItem={handleRemoveCartItem} onClear={handleClearCart} />} />
-          <Route path="/mis-pedidos" element={<Orders />} />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedClientRoute>
+                <Checkout
+                  cart={cart}
+                  loading={cartLoading}
+                  onRemoveItem={handleRemoveCartItem}
+                  onUpdateQuantity={handleUpdateCartItemQuantity}
+                  onCheckout={() => navigate('/pago')}
+                />
+              </ProtectedClientRoute>
+            }
+          />
+          <Route
+            path="/pago"
+            element={
+              <ProtectedClientRoute>
+                <Payment
+                  cart={cart}
+                  loading={cartLoading}
+                  onConfirm={async (formData) => {
+                    await createPayment(formData)
+                    await refreshCart()
+                    navigate('/mis-pedidos')
+                  }}
+                />
+              </ProtectedClientRoute>
+            }
+          />
+          <Route
+            path="/mis-pedidos"
+            element={
+              <ProtectedClientRoute>
+                <Orders />
+              </ProtectedClientRoute>
+            }
+          />
           <Route path="/iniciar-sesion" element={<LoginChoice />} />
           <Route
             path="/login"
-            element={<Login onLogin={handleClientLogin} afterLoginPath="/" />}
+            element={
+              <Login
+                onLogin={handleClientLogin}
+                onRegisterClick={() => navigate('/registro')}
+                afterLoginPath="/"
+              />
+            }
+          />
+          <Route
+            path="/registro"
+            element={
+              <Register
+                onRegister={handleClientRegister}
+                onLoginClick={() => navigate('/login')}
+                afterRegisterPath="/"
+              />
+            }
           />
           <Route path="/login-empleado" element={<LoginEmpleado />} />
 

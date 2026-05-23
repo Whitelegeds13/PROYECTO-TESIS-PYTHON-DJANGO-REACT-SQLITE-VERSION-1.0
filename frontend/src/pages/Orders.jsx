@@ -103,7 +103,7 @@ export default function Orders() {
                     </div>
                     <div>
                       <div className="text-[11px] font-extrabold tracking-widest text-white/40">TOTAL</div>
-                      <div className="mt-1 font-extrabold text-fuchsia-300">${Number(o.total).toFixed(2)}</div>
+                      <div className="mt-1 font-extrabold text-fuchsia-300">S/ {Number(o.total).toFixed(2)}</div>
                     </div>
                   </div>
                   <span className={`rounded-full border px-3 py-1 text-xs font-extrabold ${st.cls}`}>
@@ -206,4 +206,3 @@ export default function Orders() {
     </div>
   )
 }
-

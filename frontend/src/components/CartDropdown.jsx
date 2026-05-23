@@ -49,7 +49,7 @@ export default function CartDropdown({ open, loading, cart, onRemoveItem, onClea
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold text-white/90">{it.product_name}</div>
                   <div className="mt-1 text-xs text-white/60">
-                    {it.quantity} × ${Number(it.price).toFixed(2)}
+                    {it.quantity} × S/ {Number(it.price).toFixed(2)}
                   </div>
                 </div>
                 <button
@@ -70,7 +70,7 @@ export default function CartDropdown({ open, loading, cart, onRemoveItem, onClea
       <div className="border-t border-white/10 px-4 py-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-white/50">Subtotal</span>
-          <span className="font-semibold text-white/90">${Number(cart?.subtotal || 0).toFixed(2)}</span>
+          <span className="font-semibold text-white/90">S/ {Number(cart?.subtotal || 0).toFixed(2)}</span>
         </div>
         {items.length ? (
           <button

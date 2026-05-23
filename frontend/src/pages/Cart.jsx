@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function imgSrc(dataUri) {
   if (!dataUri) return null
@@ -10,11 +10,12 @@ function imgSrc(dataUri) {
 
 function money(v) {
   const n = Number(v || 0)
-  if (Number.isNaN(n)) return '$0.00'
-  return `$${n.toFixed(2)}`
+  if (Number.isNaN(n)) return 'S/ 0.00'
+  return `S/ ${n.toFixed(2)}`
 }
 
 export default function Cart({ cart, loading, onRemoveItem, onClear }) {
+  const navigate = useNavigate()
   const items = cart?.items || []
 
   return (
@@ -98,9 +99,18 @@ export default function Cart({ cart, loading, onRemoveItem, onClear }) {
                   </div>
                 )
               })}
-              <div className="flex items-center justify-between px-5 py-4">
-                <div className="text-sm text-white/55">Subtotal</div>
-                <div className="text-xl font-extrabold text-white/90">{money(cart?.subtotal || 0)}</div>
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                <div>
+                  <div className="text-sm text-white/55">Subtotal</div>
+                  <div className="text-xl font-extrabold text-white/90">{money(cart?.subtotal || 0)}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/checkout')}
+                  className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-5 py-3 text-sm font-extrabold text-[#05102a] transition hover:brightness-110"
+                >
+                  Pagar ahora
+                </button>
               </div>
             </div>
           ) : null}
@@ -109,4 +119,3 @@ export default function Cart({ cart, loading, onRemoveItem, onClear }) {
     </div>
   )
 }
-
