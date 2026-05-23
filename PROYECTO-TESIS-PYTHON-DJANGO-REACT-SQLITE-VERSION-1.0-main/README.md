@@ -203,7 +203,13 @@ Notas:
 1. Inicia el backend (Django) en `http://127.0.0.1:8000`.
 2. Inicia el frontend (React) en `http://localhost:5173`.
 3. Home público: `http://localhost:5173/`
-4. Login empleado: `http://localhost:5173/login-empleado` → redirige a `/empleado/dashboard` después de iniciar sesión.
-5. Panel empleado:
+4. Login cliente: `http://localhost:5173/login`
+5. Registro cliente: `http://localhost:5173/registro`
+6. Carrito: `http://localhost:5173/carrito`
+7. Checkout (requiere login cliente): `http://localhost:5173/checkout`
+8. Pago (requiere login cliente): `http://localhost:5173/pago`
+9. Mis pedidos (requiere login cliente): `http://localhost:5173/mis-pedidos`
+10. Login empleado: `http://localhost:5173/login-empleado` → redirige a `/empleado/dashboard` después de iniciar sesión.
+11. Panel empleado:
    - Productos: `http://localhost:5173/empleado/productos`
    - Nuevo producto: `http://localhost:5173/empleado/productos/nuevo` (sube imágenes a `backend/media/productos/`)
