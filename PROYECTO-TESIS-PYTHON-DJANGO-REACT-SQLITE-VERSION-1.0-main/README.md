@@ -35,6 +35,9 @@ python3 backend/manage.py seed_store
 python3 backend/manage.py runserver
 ```
 
+Nota:
+- Si aparece `Error: That port is already in use.` es porque el backend ya está corriendo en `127.0.0.1:8000`. Detén esa terminal con `Ctrl + C` y vuelve a ejecutar `runserver`.
+
 ### Frontend (React)
 
 En otra terminal:
@@ -67,6 +70,9 @@ python3 backend/manage.py migrate
 python3 backend/manage.py seed_store
 python3 backend/manage.py runserver
 ```
+
+Nota:
+- El comando `migrate` es obligatorio cuando hay cambios nuevos en el backend (pagos, pedidos, login events, stock).
 
 3) Frontend (si cambió algo del frontend o dependencias):
 
