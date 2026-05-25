@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Lock, UploadCloud } from 'lucide-react'
+import { Building2, CreditCard, Lock, QrCode, UploadCloud } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -76,7 +76,7 @@ export default function Payment({ cart, loading, onConfirm }) {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
         <section className="space-y-5">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <button
               type="button"
               onClick={() => setMethod('card')}
@@ -102,6 +102,19 @@ export default function Payment({ cart, loading, onConfirm }) {
             >
               <Building2 size={18} className="text-fuchsia-200" />
               Transferencia Bancaria
+            </button>
+            <button
+              type="button"
+              onClick={() => setMethod('yape_plin')}
+              className={[
+                'flex items-center justify-center gap-3 rounded-2xl border bg-white/5 px-4 py-5 text-sm font-extrabold text-white/85 transition',
+                method === 'yape_plin'
+                  ? 'border-indigo-300/40 shadow-[0_0_0_1px_rgba(99,102,241,0.18)]'
+                  : 'border-white/10 hover:border-white/20 hover:bg-white/10',
+              ].join(' ')}
+            >
+              <QrCode size={18} className="text-indigo-200" />
+              Yape / Plin
             </button>
           </div>
 
@@ -167,7 +180,7 @@ export default function Payment({ cart, loading, onConfirm }) {
                     </div>
                   </div>
                 </>
-              ) : (
+              ) : method === 'bank_transfer' ? (
                 <>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
@@ -185,6 +198,70 @@ export default function Payment({ cart, loading, onConfirm }) {
                     <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                       <div className="text-[11px] font-extrabold tracking-widest text-white/45">CCI</div>
                       <div className="mt-1 break-all text-sm font-extrabold text-white/85">002-193009482716301211</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-extrabold tracking-widest text-white/50">SUBIR COMPROBANTE</div>
+                    <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        const f = e.dataTransfer?.files?.[0]
+                        if (f) setReceipt(f)
+                      }}
+                      className="mt-3 rounded-3xl border border-dashed border-white/15 bg-white/5 px-6 py-8 text-center"
+                    >
+                      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                        <UploadCloud size={18} className="text-cyan-200" />
+                      </div>
+                      <div className="mt-3 text-sm font-extrabold text-white/80">
+                        {receipt ? receipt.name : 'Arrastra y suelta tu comprobante aquí'}
+                      </div>
+                      <div className="mt-1 text-xs text-white/55">Formatos aceptados: JPG, PNG, PDF</div>
+                      <div className="mt-4">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (f) setReceipt(f)
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-extrabold text-white/80 transition hover:bg-white/10 hover:text-white"
+                        >
+                          Seleccionar Archivo
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-3 text-xs text-white/45">
+                      Una vez subido el comprobante, validaremos tu pago en un plazo máximo de 2 horas hábiles.
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+                    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                      <img src="/media/YAPE.jpeg" alt="Yape / Plin" className="h-[180px] w-full object-cover" />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                        <div className="text-[11px] font-extrabold tracking-widest text-white/45">TITULAR</div>
+                        <div className="mt-1 text-sm font-extrabold text-white/85">PALACIO GAMER S.A.C.</div>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                        <div className="text-[11px] font-extrabold tracking-widest text-white/45">CELULAR</div>
+                        <div className="mt-1 text-sm font-extrabold text-white/85">987 654 321</div>
+                      </div>
+                      <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-xs text-white/55">
+                        Escanea el código QR desde tu app favorita (Yape o Plin) para realizar el pago directamente.
+                      </div>
                     </div>
                   </div>
 

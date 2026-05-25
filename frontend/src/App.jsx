@@ -27,6 +27,7 @@ import Orders from './pages/Orders.jsx'
 import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import Payment from './pages/Payment.jsx'
+import PaymentConfirmation from './pages/PaymentConfirmation.jsx'
 import ProductDetail from './pages/ProductDetail.jsx'
 import Register from './pages/Register.jsx'
 import EmployeeLayout from './pages/empleado/EmployeeLayout.jsx'
@@ -263,11 +264,20 @@ export default function App() {
                   cart={cart}
                   loading={cartLoading}
                   onConfirm={async (formData) => {
-                    await createPayment(formData)
+                    const res = await createPayment(formData)
                     await refreshCart()
-                    navigate('/mis-pedidos')
+                    if (res?.payment_code) navigate(`/pago/confirmacion/${encodeURIComponent(String(res.payment_code))}`)
+                    else navigate('/mis-pedidos')
                   }}
                 />
+              </ProtectedClientRoute>
+            }
+          />
+          <Route
+            path="/pago/confirmacion/:code"
+            element={
+              <ProtectedClientRoute>
+                <PaymentConfirmation />
               </ProtectedClientRoute>
             }
           />

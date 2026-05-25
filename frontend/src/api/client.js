@@ -51,12 +51,20 @@ function extractErrorMessage(data, fallback) {
   return fallback
 }
 
-async function fetchJson(path, options) {
+function normalizePath(path) {
+  return String(path || '').split('?')[0]
+}
+
+const NO_REFRESH_PATHS = new Set(['/api/token/', '/api/token/refresh/', '/api/auth/register/'])
+const NO_AUTH_HEADER_PATHS = new Set(['/api/token/', '/api/token/refresh/'])
+
+async function fetchJson(path, options, attempt = 0) {
+  const normalizedPath = normalizePath(path)
   const token = getAccessToken()
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token && !NO_AUTH_HEADER_PATHS.has(normalizedPath) ? { Authorization: `Bearer ${token}` } : {}),
       ...(options?.headers || {}),
     },
     ...options,
@@ -69,15 +77,19 @@ async function fetchJson(path, options) {
 
   if (res.status === 401) {
     const refresh = localStorage.getItem(REFRESH_KEY) || ''
-    if (refresh && path !== '/api/token/refresh/') {
+    if (attempt === 0 && refresh && !NO_REFRESH_PATHS.has(normalizedPath)) {
       try {
-        const refreshed = await fetchJson('/api/token/refresh/', {
+        const refreshed = await fetchJson(
+          '/api/token/refresh/',
+          {
           method: 'POST',
           body: JSON.stringify({ refresh }),
-        })
+          },
+          1
+        )
         if (refreshed?.access) {
           setTokens({ access: refreshed.access })
-          return fetchJson(path, options)
+          return fetchJson(path, options, 1)
         }
       } catch {
         clearTokens()
@@ -93,12 +105,13 @@ async function fetchJson(path, options) {
   return data
 }
 
-async function fetchFormData(path, formData, options = {}) {
+async function fetchFormData(path, formData, options = {}, attempt = 0) {
+  const normalizedPath = normalizePath(path)
   const token = getAccessToken()
   const res = await fetch(`${API_BASE}${path}`, {
     method: options.method || 'POST',
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token && !NO_AUTH_HEADER_PATHS.has(normalizedPath) ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
     body: formData,
@@ -111,15 +124,19 @@ async function fetchFormData(path, formData, options = {}) {
 
   if (res.status === 401) {
     const refresh = localStorage.getItem(REFRESH_KEY) || ''
-    if (refresh && path !== '/api/token/refresh/') {
+    if (attempt === 0 && refresh && !NO_REFRESH_PATHS.has(normalizedPath)) {
       try {
-        const refreshed = await fetchJson('/api/token/refresh/', {
+        const refreshed = await fetchJson(
+          '/api/token/refresh/',
+          {
           method: 'POST',
           body: JSON.stringify({ refresh }),
-        })
+          },
+          1
+        )
         if (refreshed?.access) {
           setTokens({ access: refreshed.access })
-          return fetchFormData(path, formData, options)
+          return fetchFormData(path, formData, options, 1)
         }
       } catch {
         clearTokens()
@@ -228,6 +245,15 @@ export async function checkout() {
 
 export async function createPayment(formData) {
   return fetchFormData('/api/payments/', formData)
+}
+
+export async function getPaymentByCode(code) {
+  if (!code) throw new Error('Falta código de pago')
+  return fetchJson(`/api/payments/${encodeURIComponent(String(code))}/`)
+}
+
+export async function getEmployeeDashboard() {
+  return fetchJson('/api/employee/dashboard/')
 }
 
 export async function getEmployeeProducts() {

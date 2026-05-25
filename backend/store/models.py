@@ -52,6 +52,7 @@ class Order(models.Model):
     order_code = models.CharField(max_length=32, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='orders')
     payment = models.ForeignKey('Payment', null=True, blank=True, on_delete=models.SET_NULL, related_name='orders')
+    product = models.ForeignKey('Product', null=True, blank=True, on_delete=models.SET_NULL, related_name='orders')
     product_name = models.CharField(max_length=200)
     product_description = models.TextField(blank=True)
     product_image_base64 = models.TextField(blank=True)
@@ -72,14 +73,21 @@ class Payment(models.Model):
     class Method(models.TextChoices):
         CARD = 'card', 'Tarjeta'
         BANK_TRANSFER = 'bank_transfer', 'Transferencia Bancaria'
+        YAPE_PLIN = 'yape_plin', 'Yape / Plin'
 
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pendiente'
         CONFIRMED = 'confirmed', 'Confirmado'
 
+    class SyncStatus(models.TextChoices):
+        EN_ESPERA = 'en_espera', 'En espera'
+        CONFIRMADO = 'confirmado', 'Confirmado'
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='payments')
+    payment_code = models.CharField(max_length=32, unique=True)
     method = models.CharField(max_length=32, choices=Method.choices)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    sync_status = models.CharField(max_length=16, choices=SyncStatus.choices, default=SyncStatus.EN_ESPERA)
 
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     shipping = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -114,6 +122,7 @@ class Notification(models.Model):
 
 class CartItem(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name='cart_items')
+    product = models.ForeignKey('Product', null=True, blank=True, on_delete=models.SET_NULL, related_name='cart_items')
     product_name = models.CharField(max_length=200)
     product_image_base64 = models.TextField(blank=True)
     product_image_url = models.CharField(max_length=500, blank=True)
@@ -122,3 +131,12 @@ class CartItem(models.Model):
 
     def __str__(self) -> str:
         return f'{self.product_name} x{self.quantity}'
+
+
+class LoginEvent(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='login_events')
+    is_employee = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f'{self.user_id} {"employee" if self.is_employee else "client"} {self.created_at}'
