@@ -37,6 +37,13 @@ python3 backend/manage.py runserver
 
 Nota:
 - Si aparece `Error: That port is already in use.` es porque el backend ya está corriendo en `127.0.0.1:8000`. Detén esa terminal con `Ctrl + C` y vuelve a ejecutar `runserver`.
+- Si estás dentro de `backend/` (tu terminal dice `.../backend$`), entonces NO uses `python3 backend/manage.py ...` porque buscará `backend/backend/manage.py`. En ese caso usa:
+
+```bash
+python3 manage.py migrate
+python3 manage.py seed_store
+python3 manage.py runserver
+```
 
 ### Frontend (React)
 
@@ -160,6 +167,19 @@ python3 -m pip install "Django<6" djangorestframework django-cors-headers django
 python3 backend/manage.py migrate
 python3 backend/manage.py seed_store
 python3 backend/manage.py runserver
+```
+
+Si prefieres correrlo entrando a `backend/`, entonces los comandos cambian a:
+
+```bash
+cd backend
+python3 -m venv venv
+. venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
+python3 manage.py migrate
+python3 manage.py seed_store
+python3 manage.py runserver
 ```
 
 Si el backend está arriba, deberías poder abrir:
