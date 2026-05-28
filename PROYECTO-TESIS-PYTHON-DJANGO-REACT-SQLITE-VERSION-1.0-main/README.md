@@ -1,165 +1,10 @@
-# PROYECTO-TESIS-PYTHON-DJANGO-REACT-SQLITE-VERSION-1.0
+# Cómo correr el programa (solo Bash)
 
-Web para gestión de ventas y almacén/inventario.
-
-## Requisitos
-
-- Python 3.12+ (probado con Python 3.14)
-- Node.js 18+ (recomendado 20+)
-- npm
-
-## Estructura del proyecto
-
-- `backend/` → Django + SQLite (API y panel administrativo)
-- `frontend/` → React (Vite) + Tailwind CSS
-
-## Cómo correr (rápido)
-
-### Backend (Django)
-
-Windows / PowerShell:
-
-```powershell
-
-.\venv\Scripts\python backend\manage.py migrate
-.\venv\Scripts\python backend\manage.py seed_store
-.\venv\Scripts\python backend\manage.py runserver
-```
-
-Linux / macOS (Bash):
-
-```bash
-. venv/bin/activate
-python3 backend/manage.py migrate
-python3 backend/manage.py seed_store
-python3 backend/manage.py runserver
-```
-
-Nota:
-- Si aparece `Error: That port is already in use.` es porque el backend ya está corriendo en `127.0.0.1:8000`. Detén esa terminal con `Ctrl + C` y vuelve a ejecutar `runserver`.
-- Si estás dentro de `backend/` (tu terminal dice `.../backend$`), entonces NO uses `python3 backend/manage.py ...` porque buscará `backend/backend/manage.py`. En ese caso usa:
-
-```bash
-python3 manage.py migrate
-python3 manage.py seed_store
-python3 manage.py runserver
-```
-
-### Frontend (React)
-
-En otra terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Si hay cambios (actualizar y correr)
-
-1) Detén el backend y el frontend (Ctrl + C en cada terminal).
-
-2) Backend (aplicar cambios de BD y seed):
-
-Windows / PowerShell:
-
-```powershell
-.\venv\Scripts\python backend\manage.py migrate
-.\venv\Scripts\python backend\manage.py seed_store
-.\venv\Scripts\python backend\manage.py runserver
-```
-
-Linux / macOS (Bash):
-
-```bash
-. venv/bin/activate
-python3 backend/manage.py migrate
-python3 backend/manage.py seed_store
-python3 backend/manage.py runserver
-```
-
-Nota:
-- El comando `migrate` es obligatorio cuando hay cambios nuevos en el backend (pagos, pedidos, login events, stock).
-
-3) Frontend (si cambió algo del frontend o dependencias):
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Instalación (Windows / PowerShell)
-
-### 1) Backend (Django + SQLite)
-
-Desde la carpeta raíz del proyecto:
-
-```powershell
-py -m venv venv
-.\venv\Scripts\python -m pip install --upgrade pip
-.\venv\Scripts\python -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
-.\venv\Scripts\python backend\manage.py migrate
-.\venv\Scripts\python backend\manage.py seed_store
-.\venv\Scripts\python backend\manage.py runserver
-```
-
-URLs útiles:
-
-- Panel Django: http://127.0.0.1:8000/admin/
-- Tokens (login API):
-  - `POST http://127.0.0.1:8000/api/token/`
-  - `POST http://127.0.0.1:8000/api/token/refresh/`
-
-La base de datos SQLite se guarda en `backend/db.sqlite3`.
-
-Si necesitas entrar al admin, crea un superusuario (opcional):
-
-```powershell
-.\venv\Scripts\python backend\manage.py createsuperuser
-```
-
-Seed (Palacio Gamer / Panel Empleado):
-
-- Comando: `python backend\manage.py seed_store`
-- Qué hace (idempotente): asegura categorías base y crea/asegura el empleado de prueba:
-  - Empleado (username): `GMR-0000`
-  - Código de acceso (password): `PalacioGamer#2026!`
-- Para borrar datos de `store` antes de sembrar, usa:
-
-```powershell
-.\venv\Scripts\python backend\manage.py seed_store --reset
-```
-
-### 2) Frontend (React + Tailwind)
-
-En otra terminal:
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-Abrir:
-
-- Frontend: http://localhost:5173/
-
-Nota: el frontend ya está configurado para enviar `'/api/*'` al backend en `http://127.0.0.1:8000`.
-
-## Ejecución (Linux / macOS - Bash)
-
-### 1) Backend (Django + SQLite)
+## 1) Backend (Django + SQLite)
 
 Desde la carpeta raíz del proyecto:
 
 ```bash
-sudo apt update
-# En Ubuntu/Debian (si falla `python3 -m venv` por ensurepip):
-sudo apt install -y python3-venv
-# Si tu Python es 3.12 y sigue fallando, usa:
-# sudo apt install -y python3.12-venv
-
 python3 -m venv venv
 . venv/bin/activate
 python3 -m pip install --upgrade pip
@@ -169,44 +14,20 @@ python3 backend/manage.py seed_store
 python3 backend/manage.py runserver
 ```
 
-Si prefieres correrlo entrando a `backend/`, entonces los comandos cambian a:
+Si tu terminal está dentro de `backend/` (tu prompt dice `.../backend$`), entonces usa:
 
 ```bash
-cd backend
-python3 -m venv venv
 . venv/bin/activate
-python3 -m pip install --upgrade pip
-python3 -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
 python3 manage.py migrate
 python3 manage.py seed_store
 python3 manage.py runserver
 ```
 
-Si el backend está arriba, deberías poder abrir:
+Si aparece `Error: That port is already in use.` detén el backend que ya está corriendo con `Ctrl + C` y vuelve a ejecutar `runserver`.
 
-- API: http://127.0.0.1:8000/api/categories/
-- Admin: http://127.0.0.1:8000/admin/
+## 2) Frontend (React + Vite)
 
-Si necesitas entrar al admin, crea un superusuario (opcional):
-
-```bash
-python3 backend/manage.py createsuperuser
-```
-
-Seed (Palacio Gamer / Panel Empleado):
-
-- Qué hace (idempotente): asegura categorías base y crea/asegura el empleado de prueba:
-  - Empleado (username): `GMR-0000`
-  - Código de acceso (password): `PalacioGamer#2026!`
-- Para borrar datos de `store` antes de sembrar:
-
-```bash
-python3 backend/manage.py seed_store --reset
-```
-
-### 2) Frontend (React + Tailwind)
-
-En otra terminal:
+En otra terminal (desde la raíz del proyecto):
 
 ```bash
 cd frontend
@@ -214,28 +35,46 @@ npm install
 npm run dev
 ```
 
-Abrir:
+## Abrir
 
 - Frontend: http://localhost:5173/
+- Backend: http://127.0.0.1:8000/
 
-Notas:
+## Cómo funciona el programa
 
-- Si ves `ECONNREFUSED 127.0.0.1:8000` en Vite, es porque el backend no está corriendo aún en ese host/puerto.
-- El proxy de Vite envía `/api/*` a `http://127.0.0.1:8000`.
-- Si te sale `source: no se encontró la orden`, usa `. venv/bin/activate` (punto + espacio) o abre una shell bash.
+### Cliente
 
-## Uso
+1) Registro e inicio de sesión:
+- Registro: `http://localhost:5173/registro` (crea el usuario en SQLite).
+- Login: `http://localhost:5173/login` (ingresas con **correo + contraseña**).
 
-1. Inicia el backend (Django) en `http://127.0.0.1:8000`.
-2. Inicia el frontend (React) en `http://localhost:5173`.
-3. Home público: `http://localhost:5173/`
-4. Login cliente: `http://localhost:5173/login`
-5. Registro cliente: `http://localhost:5173/registro`
-6. Carrito: `http://localhost:5173/carrito`
-7. Checkout (requiere login cliente): `http://localhost:5173/checkout`
-8. Pago (requiere login cliente): `http://localhost:5173/pago`
-9. Mis pedidos (requiere login cliente): `http://localhost:5173/mis-pedidos`
-10. Login empleado: `http://localhost:5173/login-empleado` → redirige a `/empleado/dashboard` después de iniciar sesión.
-11. Panel empleado:
-   - Productos: `http://localhost:5173/empleado/productos`
-   - Nuevo producto: `http://localhost:5173/empleado/productos/nuevo` (sube imágenes a `backend/media/productos/`)
+2) Compra:
+- Catálogo: `http://localhost:5173/hardware`
+- Agregar al carrito (requiere sesión de cliente).
+- Carrito: `http://localhost:5173/carrito`
+- Resumen de compra: `http://localhost:5173/checkout` (requiere sesión).
+- Pago: `http://localhost:5173/pago` (requiere sesión).
+  - Métodos: Tarjeta / Transferencia Bancaria / Yape-Plin.
+  - Transferencia y Yape/Plin: permite subir comprobante (imagen/PDF).
+
+3) Confirmación y pedidos:
+- Al confirmar el pago, se crea un pago con **código único** `PG-XXXX-XX-AAAA` y se redirige a la confirmación:
+  - `http://localhost:5173/pago/confirmacion/<codigo>`
+- Estado de sincronización inicial: **En espera** (luego se cambiará desde el panel de empleado).
+- Mis pedidos: `http://localhost:5173/mis-pedidos`
+
+4) Stock automático:
+- Cuando se confirma un pago, el sistema descuenta el **stock** del producto en la base de datos (SQLite).
+- Si intentas comprar más unidades que el stock disponible, el sistema lo bloquea.
+
+### Empleado
+
+1) Login de empleado:
+- `http://localhost:5173/login-empleado`
+- Usuario (seed): `GMR-0000`
+- Contraseña (seed): `PalacioGamer#2026!`
+
+2) Panel de empleado:
+- Dashboard (métricas desde BD): `http://localhost:5173/empleado/dashboard`
+- Productos (CRUD): `http://localhost:5173/empleado/productos`
+- Ventas (datos reales, 24h y top productos disponibles): `http://localhost:5173/empleado/ventas`

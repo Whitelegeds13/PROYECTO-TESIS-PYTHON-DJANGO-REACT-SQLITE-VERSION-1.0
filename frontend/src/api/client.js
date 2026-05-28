@@ -256,6 +256,10 @@ export async function getEmployeeDashboard() {
   return fetchJson('/api/employee/dashboard/')
 }
 
+export async function getEmployeeSales() {
+  return fetchJson('/api/employee/sales/')
+}
+
 export async function getEmployeeProducts() {
   return fetchJson('/api/employee/products/')
 }

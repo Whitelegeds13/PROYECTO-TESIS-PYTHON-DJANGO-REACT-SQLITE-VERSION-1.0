@@ -6,9 +6,10 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
 from django.utils.text import slugify
 from django.utils.timezone import timedelta
+from django.db.models.functions import TruncHour
 from rest_framework import generics, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -618,6 +619,96 @@ class EmployeeDashboardView(APIView):
                 'payments_today': payments_today,
                 'deliveries_pending': deliveries_pending,
                 'activity': activity,
+            }
+        )
+
+
+class EmployeeSalesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        now = timezone.now()
+        since = now - timedelta(hours=24)
+        today = now.date()
+
+        recent = (
+            Payment.objects.select_related('user')
+            .order_by('-created_at')[:8]
+        )
+        recent_payments = [
+            {
+                'payment_code': p.payment_code,
+                'customer': getattr(p.user, 'email', '') or getattr(p.user, 'username', ''),
+                'created_at': timezone.localtime(p.created_at).isoformat(),
+                'total': str(p.total),
+                'status': p.status,
+                'sync_status': p.sync_status,
+                'method': p.method,
+            }
+            for p in recent
+        ]
+
+        buckets_qs = (
+            Payment.objects.filter(created_at__gte=since, created_at__lte=now)
+            .annotate(hour=TruncHour('created_at'))
+            .values('hour')
+            .annotate(total=Sum('total'), count=Count('id'))
+            .order_by('hour')
+        )
+        buckets_map = {timezone.localtime(row['hour']): row for row in buckets_qs if row.get('hour')}
+        hours = []
+        cursor = timezone.localtime(since).replace(minute=0, second=0, microsecond=0)
+        end = timezone.localtime(now).replace(minute=0, second=0, microsecond=0)
+        while cursor <= end:
+            row = buckets_map.get(cursor)
+            hours.append(
+                {
+                    'hour': cursor.strftime('%H:%M'),
+                    'total': str(row.get('total') or '0.00') if row else '0.00',
+                    'count': int(row.get('count') or 0) if row else 0,
+                }
+            )
+            cursor = cursor + timedelta(hours=1)
+
+        top = (
+            Order.objects.select_related('product', 'payment')
+            .filter(payment__created_at__date=today, product__isnull=False)
+            .filter(product__stock__gt=0)
+            .values('product_id', 'product__name', 'product__slug', 'product__image_base64', 'product__image_file')
+            .annotate(quantity=Sum('quantity'), revenue=Sum('total'))
+            .order_by('-quantity', '-revenue')[:5]
+        )
+        top_products = []
+        for row in top:
+            product_id = row.get('product_id')
+            img_url = ''
+            if product_id:
+                p = Product.objects.filter(id=product_id).only('image_file').first()
+                if p and getattr(p, 'image_file', None):
+                    try:
+                        img_url = p.image_file.url
+                    except Exception:
+                        img_url = ''
+            top_products.append(
+                {
+                    'product_id': product_id,
+                    'name': row.get('product__name') or '',
+                    'slug': row.get('product__slug') or '',
+                    'quantity': int(row.get('quantity') or 0),
+                    'revenue': str(row.get('revenue') or '0.00'),
+                    'image_base64': row.get('product__image_base64') or '',
+                    'image_url': img_url,
+                }
+            )
+
+        return Response(
+            {
+                'recent_payments': recent_payments,
+                'sales_24h': hours,
+                'top_products_today': top_products,
             }
         )
 
