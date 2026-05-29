@@ -48,6 +48,7 @@ class Order(models.Model):
         EN_CAMINO = 'en_camino', 'En Camino'
         ENTREGADO = 'entregado', 'Entregado'
         PROCESANDO = 'procesando', 'Procesando'
+        RECHAZADO = 'rechazado', 'Rechazado'
 
     order_code = models.CharField(max_length=32, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='orders')
@@ -91,6 +92,7 @@ class Payment(models.Model):
     class SyncStatus(models.TextChoices):
         EN_ESPERA = 'en_espera', 'En espera'
         CONFIRMADO = 'confirmado', 'Confirmado'
+        RECHAZADO = 'rechazado', 'Rechazado'
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='payments')
     payment_code = models.CharField(max_length=32, unique=True)

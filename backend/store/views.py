@@ -4,9 +4,11 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
+from django.http import HttpResponse
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q, Sum, Count, Max
+from django.utils.html import escape
 from django.utils.text import slugify
 from django.utils.timezone import timedelta
 from django.db.models.functions import TruncHour
@@ -713,6 +715,300 @@ class EmployeeSalesView(APIView):
         )
 
 
+class EmployeePaymentsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        now = timezone.now()
+        today = now.date()
+
+        pending_qs = Payment.objects.select_related('user').filter(sync_status=Payment.SyncStatus.EN_ESPERA).order_by('-created_at')
+        rejected_qs = Payment.objects.select_related('user').filter(sync_status=Payment.SyncStatus.RECHAZADO).order_by('-created_at')
+        approved_qs = Payment.objects.select_related('user').filter(sync_status=Payment.SyncStatus.CONFIRMADO).order_by('-created_at')
+        pending_count = pending_qs.count()
+        pending_total = pending_qs.aggregate(v=Sum('total')).get('v') or Decimal('0.00')
+        rejected_count = rejected_qs.count()
+        approved_count = approved_qs.count()
+
+        approved_today = Payment.objects.filter(created_at__date=today, sync_status=Payment.SyncStatus.CONFIRMADO).count()
+        rejected_today = Payment.objects.filter(created_at__date=today, sync_status=Payment.SyncStatus.RECHAZADO).count()
+        denom = approved_today + rejected_today
+        approval_rate = (approved_today / denom) * 100.0 if denom else 0.0
+
+        results = []
+        for p in pending_qs[:50]:
+            receipt_url = ''
+            if getattr(p, 'receipt_file', None):
+                try:
+                    receipt_url = p.receipt_file.url
+                except Exception:
+                    receipt_url = ''
+
+            u = getattr(p, 'user', None)
+            customer_name = ''
+            customer_email = ''
+            if u:
+                customer_name = (getattr(u, 'first_name', '') or '').strip() or getattr(u, 'username', '') or ''
+                customer_email = getattr(u, 'email', '') or ''
+
+            results.append(
+                {
+                    'payment_code': p.payment_code,
+                    'ticket': p.payment_code,
+                    'customer_name': customer_name,
+                    'customer_email': customer_email,
+                    'method': p.method,
+                    'created_at': timezone.localtime(p.created_at).isoformat(),
+                    'total': str(p.total),
+                    'receipt_url': receipt_url,
+                }
+            )
+
+        rejected = []
+        for p in rejected_qs[:50]:
+            receipt_url = ''
+            if getattr(p, 'receipt_file', None):
+                try:
+                    receipt_url = p.receipt_file.url
+                except Exception:
+                    receipt_url = ''
+
+            u = getattr(p, 'user', None)
+            customer_name = ''
+            customer_email = ''
+            if u:
+                customer_name = (getattr(u, 'first_name', '') or '').strip() or getattr(u, 'username', '') or ''
+                customer_email = getattr(u, 'email', '') or ''
+
+            rejected.append(
+                {
+                    'payment_code': p.payment_code,
+                    'ticket': p.payment_code,
+                    'customer_name': customer_name,
+                    'customer_email': customer_email,
+                    'method': p.method,
+                    'created_at': timezone.localtime(p.created_at).isoformat(),
+                    'total': str(p.total),
+                    'receipt_url': receipt_url,
+                }
+            )
+
+        approved = []
+        for p in approved_qs[:50]:
+            receipt_url = ''
+            if getattr(p, 'receipt_file', None):
+                try:
+                    receipt_url = p.receipt_file.url
+                except Exception:
+                    receipt_url = ''
+
+            u = getattr(p, 'user', None)
+            customer_name = ''
+            customer_email = ''
+            if u:
+                customer_name = (getattr(u, 'first_name', '') or '').strip() or getattr(u, 'username', '') or ''
+                customer_email = getattr(u, 'email', '') or ''
+
+            approved.append(
+                {
+                    'payment_code': p.payment_code,
+                    'ticket': p.payment_code,
+                    'customer_name': customer_name,
+                    'customer_email': customer_email,
+                    'method': p.method,
+                    'created_at': timezone.localtime(p.created_at).isoformat(),
+                    'total': str(p.total),
+                    'receipt_url': receipt_url,
+                }
+            )
+
+        return Response(
+            {
+                'summary': {
+                    'pending_count': int(pending_count),
+                    'pending_total': str(pending_total),
+                    'approval_rate_today': round(float(approval_rate), 2),
+                    'rejected_count': int(rejected_count),
+                    'approved_count': int(approved_count),
+                },
+                'pending': results,
+                'rejected': rejected,
+                'approved': approved,
+            }
+        )
+
+
+class EmployeePaymentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, payment_code: str):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        p = (
+            Payment.objects.select_related('user')
+            .prefetch_related('orders')
+            .filter(payment_code=payment_code)
+            .first()
+        )
+        if not p:
+            return Response({'detail': 'Pago no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        u = getattr(p, 'user', None)
+        profile = getattr(u, 'customer_profile', None) if u else None
+        receipt_url = ''
+        if getattr(p, 'receipt_file', None):
+            try:
+                receipt_url = p.receipt_file.url
+            except Exception:
+                receipt_url = ''
+
+        items = []
+        for o in getattr(p, 'orders', []).all():
+            items.append(
+                {
+                    'order_id': o.id,
+                    'ticket': o.order_code,
+                    'product_name': o.product_name,
+                    'quantity': int(o.quantity or 0),
+                    'total': str(o.total or '0.00'),
+                    'status': o.status,
+                }
+            )
+
+        return Response(
+            {
+                'payment_code': p.payment_code,
+                'ticket': p.payment_code,
+                'sync_status': p.sync_status,
+                'method': p.method,
+                'created_at': timezone.localtime(p.created_at).isoformat(),
+                'subtotal': str(p.subtotal),
+                'igv': str(p.igv),
+                'shipping': str(p.shipping),
+                'total': str(p.total),
+                'receipt_url': receipt_url,
+                'customer': {
+                    'name': ((getattr(u, 'first_name', '') or '').strip() or getattr(u, 'username', '')) if u else '',
+                    'email': getattr(u, 'email', '') if u else '',
+                    'phone': getattr(profile, 'phone', '') if profile else '',
+                    'address': getattr(profile, 'address', '') if profile else '',
+                },
+                'items': items,
+            }
+        )
+
+
+class EmployeePaymentApproveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, payment_code: str):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        p = Payment.objects.filter(payment_code=payment_code).first()
+        if not p:
+            return Response({'detail': 'Pago no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        with transaction.atomic():
+            p.sync_status = Payment.SyncStatus.CONFIRMADO
+            p.status = Payment.Status.CONFIRMED
+            p.save(update_fields=['sync_status', 'status'])
+            Order.objects.filter(payment=p).exclude(status=Order.Status.ENTREGADO).update(status=Order.Status.EN_CAMINO)
+
+        return Response({'sync_status': p.sync_status})
+
+
+class EmployeePaymentRejectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, payment_code: str):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        p = Payment.objects.filter(payment_code=payment_code).first()
+        if not p:
+            return Response({'detail': 'Pago no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        with transaction.atomic():
+            p.sync_status = Payment.SyncStatus.RECHAZADO
+            p.save(update_fields=['sync_status'])
+            Order.objects.filter(payment=p).exclude(status=Order.Status.ENTREGADO).update(
+                status=Order.Status.RECHAZADO,
+                assigned_to=None,
+                assigned_at=None,
+                delivery_evidence_file=None,
+                delivered_at=None,
+                delivered_by=None,
+            )
+        return Response({'sync_status': p.sync_status})
+
+
+class EmployeePendingPaymentsExcelView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = (
+            Payment.objects.select_related('user')
+            .prefetch_related('orders')
+            .filter(sync_status=Payment.SyncStatus.EN_ESPERA)
+            .order_by('-created_at')
+        )
+
+        rows = []
+        for p in qs:
+            u = getattr(p, 'user', None)
+            customer = ''
+            if u:
+                customer = (getattr(u, 'first_name', '') or '').strip() or getattr(u, 'email', '') or getattr(u, 'username', '')
+            items = []
+            for o in getattr(p, 'orders', []).all():
+                items.append(f'{o.product_name} x{o.quantity}')
+            rows.append(
+                {
+                    'ticket': p.payment_code,
+                    'cliente': customer,
+                    'correo': getattr(u, 'email', '') if u else '',
+                    'metodo': p.method,
+                    'fecha': timezone.localtime(p.created_at).strftime('%Y-%m-%d %H:%M'),
+                    'total': str(p.total),
+                    'items': ', '.join(items),
+                }
+            )
+
+        html = [
+            '<html><head><meta charset="utf-8"></head><body>',
+            '<table border="1">',
+            '<tr>',
+            '<th>Ticket</th><th>Cliente</th><th>Correo</th><th>Método</th><th>Fecha</th><th>Total</th><th>Items</th>',
+            '</tr>',
+        ]
+        for r in rows:
+            html.append(
+                '<tr>'
+                f'<td>{escape(r["ticket"])}</td>'
+                f'<td>{escape(r["cliente"])}</td>'
+                f'<td>{escape(r["correo"])}</td>'
+                f'<td>{escape(r["metodo"])}</td>'
+                f'<td>{escape(r["fecha"])}</td>'
+                f'<td>{escape(r["total"])}</td>'
+                f'<td>{escape(r["items"])}</td>'
+                '</tr>'
+            )
+        html.append('</table></body></html>')
+        content = ''.join(html).encode('utf-8')
+
+        resp = HttpResponse(content, content_type='application/vnd.ms-excel; charset=utf-8')
+        resp['Content-Disposition'] = 'attachment; filename="transacciones_pendientes.xls"'
+        return resp
+
+
 class EmployeeDeliveryListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -721,7 +1017,7 @@ class EmployeeDeliveryListView(APIView):
             return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
 
         status_filter = (request.query_params.get('status') or '').strip().lower()
-        allowed_statuses = {Order.Status.EN_CAMINO, Order.Status.ENTREGADO, Order.Status.PROCESANDO}
+        allowed_statuses = {Order.Status.EN_CAMINO, Order.Status.ENTREGADO, Order.Status.PROCESANDO, Order.Status.RECHAZADO}
         if status_filter and status_filter not in allowed_statuses:
             return Response({'detail': 'Filtro de estado inválido.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -729,7 +1025,9 @@ class EmployeeDeliveryListView(APIView):
         if status_filter:
             qs = qs.filter(status=status_filter)
         else:
-            qs = qs.filter(status__in=[Order.Status.PROCESANDO, Order.Status.EN_CAMINO, Order.Status.ENTREGADO]).order_by('-id')
+            qs = qs.filter(
+                status__in=[Order.Status.EN_CAMINO, Order.Status.ENTREGADO, Order.Status.RECHAZADO]
+            ).order_by('-id')
 
         results = []
         for o in qs[:50]:
@@ -846,11 +1144,15 @@ class EmployeeDeliveryDetailView(APIView):
         if action not in {'evidence', 'confirm', 'assign'}:
             return Response({'detail': 'Acción inválida.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        o = Order.objects.select_related('user').filter(id=pk).first()
+        o = Order.objects.select_related('user', 'payment').filter(id=pk).first()
         if not o:
             return Response({'detail': 'Pedido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
         if action == 'assign':
+            if o.status in {Order.Status.ENTREGADO, Order.Status.RECHAZADO}:
+                return Response({'detail': 'Pedido bloqueado.'}, status=status.HTTP_400_BAD_REQUEST)
+            if getattr(o, 'payment', None) and getattr(o.payment, 'sync_status', '') != Payment.SyncStatus.CONFIRMADO:
+                return Response({'detail': 'Pago no aprobado.'}, status=status.HTTP_400_BAD_REQUEST)
             to_id = request.data.get('assigned_to') or request.data.get('assigned_to_id')
             try:
                 to_id = int(to_id)
@@ -881,6 +1183,10 @@ class EmployeeDeliveryDetailView(APIView):
             )
 
         if action == 'evidence':
+            if o.status == Order.Status.RECHAZADO:
+                return Response({'detail': 'Pedido bloqueado.'}, status=status.HTTP_400_BAD_REQUEST)
+            if getattr(o, 'payment', None) and getattr(o.payment, 'sync_status', '') != Payment.SyncStatus.CONFIRMADO:
+                return Response({'detail': 'Pago no aprobado.'}, status=status.HTTP_400_BAD_REQUEST)
             if not request.FILES:
                 return Response({'detail': 'Falta archivo.'}, status=status.HTTP_400_BAD_REQUEST)
             file_obj = next(iter(request.FILES.values()))
@@ -895,6 +1201,10 @@ class EmployeeDeliveryDetailView(APIView):
 
         if o.status != Order.Status.EN_CAMINO:
             return Response({'detail': 'Solo se puede confirmar entregas en estado En camino.'}, status=status.HTTP_400_BAD_REQUEST)
+        if o.status == Order.Status.RECHAZADO:
+            return Response({'detail': 'Pedido bloqueado.'}, status=status.HTTP_400_BAD_REQUEST)
+        if getattr(o, 'payment', None) and getattr(o.payment, 'sync_status', '') != Payment.SyncStatus.CONFIRMADO:
+            return Response({'detail': 'Pago no aprobado.'}, status=status.HTTP_400_BAD_REQUEST)
         if not getattr(o, 'delivery_evidence_file', None):
             return Response({'detail': 'Primero sube la evidencia.'}, status=status.HTTP_400_BAD_REQUEST)
 

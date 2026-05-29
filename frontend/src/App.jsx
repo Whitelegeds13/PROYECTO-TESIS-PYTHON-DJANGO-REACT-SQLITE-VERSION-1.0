@@ -37,6 +37,7 @@ import EmployeeProducts from './pages/empleado/EmployeeProducts.jsx'
 import EmployeeSales from './pages/empleado/EmployeeSales.jsx'
 import EmployeeClients from './pages/empleado/EmployeeClients.jsx'
 import EmployeeDeliveries from './pages/empleado/EmployeeDeliveries.jsx'
+import EmployeePayments from './pages/empleado/EmployeePayments.jsx'
 
 export default function App() {
   const navigate = useNavigate()
@@ -340,7 +341,7 @@ export default function App() {
             <Route path="ventas" element={<EmployeeSales />} />
             <Route path="clientes" element={<EmployeeClients />} />
             <Route path="entregas" element={<EmployeeDeliveries />} />
-            <Route path="pagos" element={<EmployeeSection title="Pagos" />} />
+            <Route path="pagos" element={<EmployeePayments />} />
             <Route path="reportes" element={<EmployeeSection title="Reportes" />} />
             <Route path="configuracion" element={<EmployeeSection title="Configuración" />} />
             <Route path="*" element={<Navigate to="/empleado/dashboard" replace />} />

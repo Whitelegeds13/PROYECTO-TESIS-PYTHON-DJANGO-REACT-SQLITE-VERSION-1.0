@@ -18,12 +18,14 @@ function statusLabel(st) {
   if (st === 'en_camino') return 'En camino'
   if (st === 'entregado') return 'Entregado'
   if (st === 'procesando') return 'Procesando'
+  if (st === 'rechazado') return 'Rechazado'
   return String(st || '')
 }
 
 function statusBadge(st) {
   if (st === 'entregado') return 'bg-emerald-300 text-emerald-950'
   if (st === 'en_camino') return 'bg-amber-300 text-amber-950'
+  if (st === 'rechazado') return 'bg-rose-300 text-rose-950'
   return 'bg-white/20 text-white'
 }
 
@@ -43,7 +45,7 @@ export default function EmployeeDeliveries() {
   const [confirming, setConfirming] = useState(false)
 
   const enCamino = useMemo(() => list.filter((o) => o.status === 'en_camino'), [list])
-  const entregados = useMemo(() => list.filter((o) => o.status === 'entregado'), [list])
+  const historial = useMemo(() => list.filter((o) => o.status === 'entregado' || o.status === 'rechazado'), [list])
 
   async function refreshList() {
     const res = await getEmployeeDeliveries()
@@ -109,7 +111,9 @@ export default function EmployeeDeliveries() {
 
   const evidenceUrl = selected?.evidence_url || ''
   const canConfirm = Boolean(selected?.status === 'en_camino' && evidenceUrl && !confirming && !uploading)
-  const canAssign = Boolean(selectedId && selected?.status !== 'entregado' && !assigning && !uploading && !confirming)
+  const canAssign = Boolean(
+    selectedId && selected?.status !== 'entregado' && selected?.status !== 'rechazado' && !assigning && !uploading && !confirming,
+  )
 
   async function handleAssign(assigneeId) {
     if (!selectedId) return
@@ -290,8 +294,8 @@ export default function EmployeeDeliveries() {
                           Cargando…
                         </td>
                       </tr>
-                    ) : entregados.length ? (
-                      entregados.slice(0, 6).map((o) => (
+                    ) : historial.length ? (
+                      historial.slice(0, 6).map((o) => (
                         <tr
                           key={o.id}
                           className={[

@@ -22,12 +22,14 @@ function fmtDT(iso) {
 
 function statusLabel(p) {
   if (p?.sync_status === 'en_espera') return 'En espera'
-  if (p?.sync_status === 'confirmado') return 'Confirmado'
+  if (p?.sync_status === 'confirmado') return 'Aprobado'
+  if (p?.sync_status === 'rechazado') return 'Rechazado'
   if (p?.status === 'confirmed') return 'Confirmado'
   return 'Pendiente'
 }
 
 function statusColor(p) {
+  if (p?.sync_status === 'rechazado') return 'bg-rose-300'
   if (p?.sync_status === 'confirmado' || p?.status === 'confirmed') return 'bg-emerald-300'
   return 'bg-amber-300'
 }
@@ -197,4 +199,3 @@ export default function EmployeeSales() {
     </div>
   )
 }
-

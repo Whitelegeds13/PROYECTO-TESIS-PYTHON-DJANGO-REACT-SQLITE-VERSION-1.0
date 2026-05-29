@@ -152,6 +152,51 @@ async function fetchFormData(path, formData, options = {}, attempt = 0) {
   return data
 }
 
+async function fetchBlob(path, options = {}, attempt = 0) {
+  const normalizedPath = normalizePath(path)
+  const token = getAccessToken()
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      ...(token && !NO_AUTH_HEADER_PATHS.has(normalizedPath) ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers || {}),
+    },
+    ...options,
+  })
+
+  if (res.status === 204) return null
+
+  if (res.status === 401) {
+    const refresh = localStorage.getItem(REFRESH_KEY) || ''
+    if (attempt === 0 && refresh && !NO_REFRESH_PATHS.has(normalizedPath)) {
+      try {
+        const refreshed = await fetchJson(
+          '/api/token/refresh/',
+          {
+            method: 'POST',
+            body: JSON.stringify({ refresh }),
+          },
+          1,
+        )
+        if (refreshed?.access) {
+          setTokens({ access: refreshed.access })
+          return fetchBlob(path, options, 1)
+        }
+      } catch {
+        clearTokens()
+      }
+    }
+  }
+
+  if (!res.ok) {
+    const text = await res.text()
+    const data = safeJsonParse(text)
+    const message = extractErrorMessage(data, `HTTP ${res.status}`)
+    throw new Error(message)
+  }
+
+  return res.blob()
+}
+
 export async function login({ username, password }) {
   const data = await fetchJson('/api/token/', {
     method: 'POST',
@@ -319,4 +364,28 @@ export async function assignEmployeeDelivery({ orderId, assigneeId }) {
     method: 'POST',
     body: JSON.stringify({ assigned_to: assigneeId }),
   })
+}
+
+export async function getEmployeePayments() {
+  return fetchJson('/api/employee/payments/')
+}
+
+export async function getEmployeePaymentDetail(paymentCode) {
+  if (!paymentCode) throw new Error('Falta paymentCode')
+  return fetchJson(`/api/employee/payments/${encodeURIComponent(String(paymentCode))}/`)
+}
+
+export async function approveEmployeePayment(paymentCode) {
+  if (!paymentCode) throw new Error('Falta paymentCode')
+  return fetchJson(`/api/employee/payments/${encodeURIComponent(String(paymentCode))}/approve/`, { method: 'POST' })
+}
+
+export async function rejectEmployeePayment(paymentCode) {
+  if (!paymentCode) throw new Error('Falta paymentCode')
+  return fetchJson(`/api/employee/payments/${encodeURIComponent(String(paymentCode))}/reject/`, { method: 'POST' })
+}
+
+export async function downloadEmployeePendingPaymentsExcel() {
+  const blob = await fetchBlob('/api/employee/payments/export/')
+  return blob
 }
