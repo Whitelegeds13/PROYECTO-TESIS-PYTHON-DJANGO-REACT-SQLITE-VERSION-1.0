@@ -36,6 +36,7 @@ import EmployeeProductCreate from './pages/empleado/EmployeeProductCreate.jsx'
 import EmployeeProducts from './pages/empleado/EmployeeProducts.jsx'
 import EmployeeSales from './pages/empleado/EmployeeSales.jsx'
 import EmployeeClients from './pages/empleado/EmployeeClients.jsx'
+import EmployeeDeliveries from './pages/empleado/EmployeeDeliveries.jsx'
 
 export default function App() {
   const navigate = useNavigate()
@@ -185,8 +186,8 @@ export default function App() {
     }
   }
 
-  async function handleClientRegister({ full_name, email, password, address }) {
-    await register({ full_name, email, password, address })
+  async function handleClientRegister({ full_name, email, password, address, phone }) {
+    await register({ full_name, email, password, address, phone })
     await handleClientLogin({ email, password })
   }
 
@@ -338,7 +339,7 @@ export default function App() {
             <Route path="productos/nuevo" element={<EmployeeProductCreate />} />
             <Route path="ventas" element={<EmployeeSales />} />
             <Route path="clientes" element={<EmployeeClients />} />
-            <Route path="entregas" element={<EmployeeSection title="Entregas" />} />
+            <Route path="entregas" element={<EmployeeDeliveries />} />
             <Route path="pagos" element={<EmployeeSection title="Pagos" />} />
             <Route path="reportes" element={<EmployeeSection title="Reportes" />} />
             <Route path="configuracion" element={<EmployeeSection title="Configuración" />} />

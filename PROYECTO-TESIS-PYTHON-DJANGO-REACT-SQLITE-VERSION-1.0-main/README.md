@@ -5,8 +5,8 @@
 Desde la carpeta raíz del proyecto:
 
 ```bash
-python3 -m venv venv
-. venv/bin/activate
+python3 -m venv backend/venv
+. backend/venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
 python3 backend/manage.py migrate
@@ -47,6 +47,7 @@ npm run dev
 1) Registro e inicio de sesión:
 - Registro: `http://localhost:5173/registro` (crea el usuario en SQLite).
 - Login: `http://localhost:5173/login` (ingresas con **correo + contraseña**).
+  - En registro ahora se pide: nombre completo, correo, dirección y teléfono.
 
 2) Compra:
 - Catálogo: `http://localhost:5173/hardware`
@@ -73,8 +74,11 @@ npm run dev
 - `http://localhost:5173/login-empleado`
 - Usuario (seed): `GMR-0000`
 - Contraseña (seed): `PalacioGamer#2026!`
+  - Repartidores creados: `ENT-0001` … `ENT-0005`
 
 2) Panel de empleado:
 - Dashboard (métricas desde BD): `http://localhost:5173/empleado/dashboard`
 - Productos (CRUD): `http://localhost:5173/empleado/productos`
 - Ventas (datos reales, 24h y top productos disponibles): `http://localhost:5173/empleado/ventas`
+- Clientes (listar/borrar, estado por horas): `http://localhost:5173/empleado/clientes`
+- Entregas (asignar repartidor, evidencia y confirmar entrega): `http://localhost:5173/empleado/entregas`

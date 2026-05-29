@@ -176,10 +176,10 @@ export async function refreshToken() {
   return data
 }
 
-export async function register({ full_name, email, password, address }) {
+export async function register({ full_name, email, password, address, phone }) {
   return fetchJson('/api/auth/register/', {
     method: 'POST',
-    body: JSON.stringify({ full_name, email, password, address }),
+    body: JSON.stringify({ full_name, email, password, address, phone }),
   })
 }
 
@@ -281,4 +281,42 @@ export async function getEmployeeClients(params = {}) {
 export async function deleteEmployeeClient(id) {
   if (!id) throw new Error('Falta id')
   return fetchJson(`/api/employee/clients/${encodeURIComponent(String(id))}/`, { method: 'DELETE' })
+}
+
+export async function getEmployeeDeliveries(params = {}) {
+  const searchParams = new URLSearchParams()
+  if (params.status) searchParams.set('status', params.status)
+  const qs = searchParams.toString()
+  return fetchJson(`/api/employee/deliveries/${qs ? `?${qs}` : ''}`)
+}
+
+export async function getEmployeeDeliveryById(id) {
+  if (!id) throw new Error('Falta id')
+  return fetchJson(`/api/employee/deliveries/${encodeURIComponent(String(id))}/`)
+}
+
+export async function uploadEmployeeDeliveryEvidence(id, file) {
+  if (!id) throw new Error('Falta id')
+  if (!file) throw new Error('Falta archivo')
+  const fd = new FormData()
+  fd.append('file', file)
+  return fetchFormData(`/api/employee/deliveries/${encodeURIComponent(String(id))}/?action=evidence`, fd, { method: 'POST' })
+}
+
+export async function confirmEmployeeDelivery(id) {
+  if (!id) throw new Error('Falta id')
+  return fetchJson(`/api/employee/deliveries/${encodeURIComponent(String(id))}/?action=confirm`, { method: 'POST' })
+}
+
+export async function getEmployeeDeliveryStaff() {
+  return fetchJson('/api/employee/delivery-staff/')
+}
+
+export async function assignEmployeeDelivery({ orderId, assigneeId }) {
+  if (!orderId) throw new Error('Falta orderId')
+  if (!assigneeId) throw new Error('Falta assigneeId')
+  return fetchJson(`/api/employee/deliveries/${encodeURIComponent(String(orderId))}/?action=assign`, {
+    method: 'POST',
+    body: JSON.stringify({ assigned_to: assigneeId }),
+  })
 }

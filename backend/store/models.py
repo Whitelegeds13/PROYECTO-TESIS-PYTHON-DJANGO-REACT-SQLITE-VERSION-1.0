@@ -64,6 +64,15 @@ class Order(models.Model):
     can_download_invoice = models.BooleanField(default=False)
     can_track = models.BooleanField(default=False)
     can_cancel = models.BooleanField(default=False)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='assigned_orders'
+    )
+    assigned_at = models.DateTimeField(null=True, blank=True)
+    delivery_evidence_file = models.FileField(upload_to='evidencias/', null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    delivered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='delivered_orders'
+    )
 
     def __str__(self) -> str:
         return self.order_code
@@ -145,6 +154,7 @@ class LoginEvent(models.Model):
 class CustomerProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer_profile')
     address = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20)
 
     def __str__(self) -> str:
         return f'{self.user_id}'

@@ -11,14 +11,14 @@ from django.utils.text import slugify
 from django.utils.timezone import timedelta
 from django.db.models.functions import TruncHour
 from rest_framework import generics, status
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import CartItem, Category, LoginEvent, Notification, Order, Payment, Product
+from .models import CartItem, Category, CustomerProfile, LoginEvent, Notification, Order, Payment, Product
 from .serializers import (
     CartItemSerializer,
     CategorySerializer,
@@ -713,8 +713,221 @@ class EmployeeSalesView(APIView):
         )
 
 
-class EmployeeClientListView(APIView):
+class EmployeeDeliveryListView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        status_filter = (request.query_params.get('status') or '').strip().lower()
+        allowed_statuses = {Order.Status.EN_CAMINO, Order.Status.ENTREGADO, Order.Status.PROCESANDO}
+        if status_filter and status_filter not in allowed_statuses:
+            return Response({'detail': 'Filtro de estado inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = Order.objects.select_related('user', 'payment', 'delivered_by', 'assigned_to').all().order_by('-id')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        else:
+            qs = qs.filter(status__in=[Order.Status.PROCESANDO, Order.Status.EN_CAMINO, Order.Status.ENTREGADO]).order_by('-id')
+
+        results = []
+        for o in qs[:50]:
+            created_at = None
+            if getattr(o, 'payment', None) and getattr(o.payment, 'created_at', None):
+                created_at = timezone.localtime(o.payment.created_at).isoformat()
+            delivered_at = None
+            if getattr(o, 'delivered_at', None):
+                delivered_at = timezone.localtime(o.delivered_at).isoformat()
+            evidence_url = ''
+            if getattr(o, 'delivery_evidence_file', None):
+                try:
+                    evidence_url = o.delivery_evidence_file.url
+                except Exception:
+                    evidence_url = ''
+
+            u = getattr(o, 'user', None)
+            customer = ''
+            if u:
+                customer = (getattr(u, 'first_name', '') or '').strip() or getattr(u, 'email', '') or getattr(u, 'username', '')
+
+            assigned_at = None
+            if getattr(o, 'assigned_at', None):
+                assigned_at = timezone.localtime(o.assigned_at).isoformat()
+            assigned_to = getattr(o, 'assigned_to', None)
+            driver = ''
+            if assigned_to:
+                driver = (getattr(assigned_to, 'first_name', '') or '').strip() or getattr(assigned_to, 'username', '') or ''
+
+            results.append(
+                {
+                    'id': o.id,
+                    'order_code': o.order_code,
+                    'reference': o.order_code,
+                    'payment_code': getattr(getattr(o, 'payment', None), 'payment_code', '') or '',
+                    'customer': customer,
+                    'driver': driver,
+                    'assigned_at': assigned_at,
+                    'status': o.status,
+                    'created_at': created_at,
+                    'delivered_at': delivered_at,
+                    'evidence_url': evidence_url,
+                }
+            )
+
+        return Response({'results': results})
+
+
+class EmployeeDeliveryDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get(self, request, pk: int):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        o = Order.objects.select_related('user', 'payment', 'assigned_to', 'delivered_by').filter(id=pk).first()
+        if not o:
+            return Response({'detail': 'Pedido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        u = getattr(o, 'user', None)
+        profile = getattr(u, 'customer_profile', None) if u else None
+
+        created_at = None
+        if getattr(o, 'payment', None) and getattr(o.payment, 'created_at', None):
+            created_at = timezone.localtime(o.payment.created_at).isoformat()
+
+        delivered_at = None
+        if getattr(o, 'delivered_at', None):
+            delivered_at = timezone.localtime(o.delivered_at).isoformat()
+
+        evidence_url = ''
+        if getattr(o, 'delivery_evidence_file', None):
+            try:
+                evidence_url = o.delivery_evidence_file.url
+            except Exception:
+                evidence_url = ''
+
+        assigned_at = None
+        if getattr(o, 'assigned_at', None):
+            assigned_at = timezone.localtime(o.assigned_at).isoformat()
+        assigned_to = getattr(o, 'assigned_to', None)
+        driver = ''
+        if assigned_to:
+            driver = (getattr(assigned_to, 'first_name', '') or '').strip() or getattr(assigned_to, 'username', '') or ''
+
+        return Response(
+            {
+                'id': o.id,
+                'order_code': o.order_code,
+                'reference': o.order_code,
+                'payment_code': getattr(getattr(o, 'payment', None), 'payment_code', '') or '',
+                'status': o.status,
+                'created_at': created_at,
+                'product_name': o.product_name,
+                'quantity': int(o.quantity or 0),
+                'total': str(o.total or '0.00'),
+                'customer_name': ((getattr(u, 'first_name', '') or '').strip() or getattr(u, 'username', '')) if u else '',
+                'customer_email': getattr(u, 'email', '') if u else '',
+                'customer_phone': getattr(profile, 'phone', '') if profile else '',
+                'customer_address': getattr(profile, 'address', '') if profile else '',
+                'driver': driver,
+                'assigned_at': assigned_at,
+                'delivered_at': delivered_at,
+                'evidence_url': evidence_url,
+            }
+        )
+
+    def post(self, request, pk: int):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        action = (request.query_params.get('action') or '').strip().lower()
+        if action not in {'evidence', 'confirm', 'assign'}:
+            return Response({'detail': 'Acción inválida.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        o = Order.objects.select_related('user').filter(id=pk).first()
+        if not o:
+            return Response({'detail': 'Pedido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if action == 'assign':
+            to_id = request.data.get('assigned_to') or request.data.get('assigned_to_id')
+            try:
+                to_id = int(to_id)
+            except Exception:
+                return Response({'detail': 'assigned_to inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            User = get_user_model()
+            assignee = User.objects.filter(id=to_id, is_staff=True).first()
+            if not assignee or getattr(assignee, 'is_superuser', False):
+                return Response({'detail': 'Repartidor no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+            if not str(getattr(assignee, 'username', '')).startswith('ENT-'):
+                return Response({'detail': 'Repartidor inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            o.assigned_to = assignee
+            o.assigned_at = timezone.now()
+            if o.status == Order.Status.PROCESANDO:
+                o.status = Order.Status.EN_CAMINO
+                o.save(update_fields=['assigned_to', 'assigned_at', 'status'])
+            else:
+                o.save(update_fields=['assigned_to', 'assigned_at'])
+
+            return Response(
+                {
+                    'status': o.status,
+                    'driver': (getattr(assignee, 'first_name', '') or '').strip() or getattr(assignee, 'username', ''),
+                    'assigned_at': timezone.localtime(o.assigned_at).isoformat() if o.assigned_at else None,
+                }
+            )
+
+        if action == 'evidence':
+            if not request.FILES:
+                return Response({'detail': 'Falta archivo.'}, status=status.HTTP_400_BAD_REQUEST)
+            file_obj = next(iter(request.FILES.values()))
+            o.delivery_evidence_file = file_obj
+            o.save(update_fields=['delivery_evidence_file'])
+            url = ''
+            try:
+                url = o.delivery_evidence_file.url if o.delivery_evidence_file else ''
+            except Exception:
+                url = ''
+            return Response({'evidence_url': url})
+
+        if o.status != Order.Status.EN_CAMINO:
+            return Response({'detail': 'Solo se puede confirmar entregas en estado En camino.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not getattr(o, 'delivery_evidence_file', None):
+            return Response({'detail': 'Primero sube la evidencia.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        o.status = Order.Status.ENTREGADO
+        o.delivered_at = timezone.now()
+        o.delivered_by = request.user
+        o.save(update_fields=['status', 'delivered_at', 'delivered_by'])
+        return Response({'status': o.status})
+
+
+class EmployeeDeliveryStaffListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        User = get_user_model()
+        qs = User.objects.filter(is_staff=True, username__startswith='ENT-').order_by('username')
+        results = []
+        for u in qs:
+            results.append(
+                {
+                    'id': u.id,
+                    'username': u.username,
+                    'name': (getattr(u, 'first_name', '') or '').strip() or u.username,
+                }
+            )
+        return Response({'results': results})
+
+
+
+class EmployeeClientListView(APIView):
 
     def get(self, request):
         if not getattr(request.user, 'is_staff', False):
@@ -839,6 +1052,8 @@ class RegisterView(APIView):
         full_name = str(payload.get('full_name') or '').strip()
         email = str(payload.get('email') or '').strip()
         password = str(payload.get('password') or '')
+        address = str(payload.get('address') or '').strip()
+        phone = str(payload.get('phone') or '').strip()
 
         if not full_name:
             return Response({'detail': 'El nombre completo es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -846,6 +1061,10 @@ class RegisterView(APIView):
             return Response({'detail': 'El correo es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
         if not password:
             return Response({'detail': 'password es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not address:
+            return Response({'detail': 'La dirección es requerida.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone:
+            return Response({'detail': 'El teléfono es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             validate_email(email)
@@ -867,7 +1086,11 @@ class RegisterView(APIView):
         user = User.objects.create_user(username=email, email=email, password=password)
         user.first_name = full_name
         user.save(update_fields=['first_name'])
-        return Response({'id': user.id, 'username': user.username, 'email': user.email}, status=status.HTTP_201_CREATED)
+        CustomerProfile.objects.update_or_create(user=user, defaults={'address': address, 'phone': phone})
+        return Response(
+            {'id': user.id, 'username': user.username, 'email': user.email, 'address': address, 'phone': phone},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -907,6 +1130,7 @@ class MeView(APIView):
 
     def get(self, request):
         u = request.user
+        profile = getattr(u, 'customer_profile', None)
         return Response(
             {
                 'id': u.id,
@@ -914,6 +1138,8 @@ class MeView(APIView):
                 'email': u.email,
                 'is_staff': bool(getattr(u, 'is_staff', False)),
                 'is_superuser': bool(getattr(u, 'is_superuser', False)),
+                'address': getattr(profile, 'address', '') if profile else '',
+                'phone': getattr(profile, 'phone', '') if profile else '',
             }
         )
 

@@ -188,7 +188,11 @@ class Command(BaseCommand):
                 client_update_fields.insert(1, 'is_superuser')
             client.save(update_fields=client_update_fields)
             CustomerProfile.objects.update_or_create(
-                user=client, defaults={'address': f'__AUTO__ Dirección pendiente #{client.id}'}
+                user=client,
+                defaults={
+                    'address': f'__AUTO__ Dirección pendiente #{client.id}',
+                    'phone': f'__AUTO__ Tel pendiente #{client.id}',
+                },
             )
 
             self.stdout.write(
