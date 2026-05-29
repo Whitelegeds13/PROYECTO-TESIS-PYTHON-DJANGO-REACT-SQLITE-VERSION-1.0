@@ -82,3 +82,4 @@ npm run dev
 - Ventas (datos reales, 24h y top productos disponibles): `http://localhost:5173/empleado/ventas`
 - Clientes (listar/borrar, estado por horas): `http://localhost:5173/empleado/clientes`
 - Entregas (asignar repartidor, evidencia y confirmar entrega): `http://localhost:5173/empleado/entregas`
+- Pagos (validación: pendientes, rechazados y aprobados + descargar Excel): `http://localhost:5173/empleado/pagos`
