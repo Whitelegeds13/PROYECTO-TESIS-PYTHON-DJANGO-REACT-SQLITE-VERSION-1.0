@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 export default function Register({ onRegister, onLoginClick, afterRegisterPath = '/' }) {
   const navigate = useNavigate()
   const [fullName, setFullName] = useState('')
+  const [address, setAddress] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -24,7 +25,7 @@ export default function Register({ onRegister, onLoginClick, afterRegisterPath =
     }
     setLoading(true)
     try {
-      await onRegister({ full_name: fullName.trim(), email: email.trim(), password })
+      await onRegister({ full_name: fullName.trim(), address: address.trim(), email: email.trim(), password })
       navigate(afterRegisterPath)
     } catch (err) {
       setError(err?.message || 'No se pudo crear la cuenta')
@@ -62,6 +63,16 @@ export default function Register({ onRegister, onLoginClick, afterRegisterPath =
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/85 outline-none placeholder:text-white/35 focus:border-cyan-300/30"
               placeholder="tu@email.com"
               autoComplete="email"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-extrabold tracking-widest text-white/50">DIRECCIÓN</label>
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/85 outline-none placeholder:text-white/35 focus:border-cyan-300/30"
+              placeholder="Ej. Av. Principal 123, Lima"
+              autoComplete="street-address"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

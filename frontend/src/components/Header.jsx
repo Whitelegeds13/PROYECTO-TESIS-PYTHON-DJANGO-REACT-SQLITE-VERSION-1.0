@@ -20,8 +20,11 @@ export default function Header({
   onToggleNotifications,
   onGoLogin,
   onGoAccount,
+  onGoEmployeePanel,
   onLogout,
   showClientSession,
+  sessionActive,
+  employeeSession,
   me,
   onSearchSubmit,
   onRemoveCartItem,
@@ -123,7 +126,7 @@ export default function Header({
 
             <button
               type="button"
-              onClick={showClientSession ? onGoAccount : onGoLogin}
+              onClick={sessionActive ? (employeeSession ? onGoEmployeePanel : onGoAccount) : onGoLogin}
               className="rounded-full border border-white/10 bg-white/5 p-2 text-white/80 transition hover:text-white"
               aria-label="Usuario"
             >
@@ -148,17 +151,29 @@ export default function Header({
             </button>
 
             <div className="hidden md:block">
-              <button
-                type="button"
-                onClick={showClientSession ? onLogout : onGoLogin}
-                className={
-                  showClientSession
-                    ? 'rounded-full bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-500'
-                    : 'rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white'
-                }
-              >
-                {showClientSession ? 'Cerrar sesión' : 'Iniciar sesión'}
-              </button>
+              {sessionActive ? (
+                <div className="inline-flex min-w-[230px] overflow-hidden rounded-full border border-white/10 bg-white/5">
+                  <div className="inline-flex flex-1 items-center justify-center gap-2 border-r border-white/10 bg-emerald-400/10 px-4 py-2 text-[11px] font-extrabold text-emerald-100/90">
+                    <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                    Sesión iniciada
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="flex-1 bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-500"
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onGoLogin}
+                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
+                >
+                  Iniciar sesión
+                </button>
+              )}
             </div>
 
             <NotificationDropdown

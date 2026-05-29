@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils.text import slugify
 
-from store.models import CartItem, Category, Notification, Order, Product
+from store.models import CartItem, Category, CustomerProfile, Notification, Order, Product
 
 
 def _svg_data_uri(title: str, subtitle: str = '', accent_a: str = '#A855F7', accent_b: str = '#22D3EE'):
@@ -187,6 +187,9 @@ class Command(BaseCommand):
             if hasattr(client, 'is_superuser'):
                 client_update_fields.insert(1, 'is_superuser')
             client.save(update_fields=client_update_fields)
+            CustomerProfile.objects.update_or_create(
+                user=client, defaults={'address': f'__AUTO__ Dirección pendiente #{client.id}'}
+            )
 
             self.stdout.write(
                 self.style.SUCCESS(

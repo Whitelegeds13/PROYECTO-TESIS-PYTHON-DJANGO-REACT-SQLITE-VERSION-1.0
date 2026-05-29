@@ -176,10 +176,10 @@ export async function refreshToken() {
   return data
 }
 
-export async function register({ full_name, email, password }) {
+export async function register({ full_name, email, password, address }) {
   return fetchJson('/api/auth/register/', {
     method: 'POST',
-    body: JSON.stringify({ full_name, email, password }),
+    body: JSON.stringify({ full_name, email, password, address }),
   })
 }
 
@@ -266,4 +266,19 @@ export async function getEmployeeProducts() {
 
 export async function createEmployeeProduct(formData) {
   return fetchFormData('/api/employee/products/', formData)
+}
+
+export async function getEmployeeClients(params = {}) {
+  const searchParams = new URLSearchParams()
+  if (params.search) searchParams.set('search', params.search)
+  if (params.status) searchParams.set('status', params.status)
+  if (params.page) searchParams.set('page', String(params.page))
+  if (params.page_size) searchParams.set('page_size', String(params.page_size))
+  const qs = searchParams.toString()
+  return fetchJson(`/api/employee/clients/${qs ? `?${qs}` : ''}`)
+}
+
+export async function deleteEmployeeClient(id) {
+  if (!id) throw new Error('Falta id')
+  return fetchJson(`/api/employee/clients/${encodeURIComponent(String(id))}/`, { method: 'DELETE' })
 }

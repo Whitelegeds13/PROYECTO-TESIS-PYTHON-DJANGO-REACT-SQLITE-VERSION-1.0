@@ -6,7 +6,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, Max
 from django.utils.text import slugify
 from django.utils.timezone import timedelta
 from django.db.models.functions import TruncHour
@@ -711,6 +711,123 @@ class EmployeeSalesView(APIView):
                 'top_products_today': top_products,
             }
         )
+
+
+class EmployeeClientListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        User = get_user_model()
+        now = timezone.now()
+
+        search = (request.query_params.get('search') or '').strip()
+        status_filter = (request.query_params.get('status') or '').strip().lower()
+
+        try:
+            page = int(request.query_params.get('page') or 1)
+        except Exception:
+            page = 1
+        page = max(1, page)
+
+        try:
+            page_size = int(request.query_params.get('page_size') or 10)
+        except Exception:
+            page_size = 10
+        page_size = min(max(5, page_size), 50)
+
+        qs = (
+            User.objects.filter(is_staff=False)
+            .annotate(total_purchases=Sum('payments__total'))
+            .annotate(last_client_login=Max('login_events__created_at', filter=Q(login_events__is_employee=False)))
+            .order_by('-date_joined')
+        )
+        if search:
+            qs = qs.filter(Q(email__icontains=search) | Q(username__icontains=search) | Q(first_name__icontains=search))
+
+        rows = list(
+            qs.values(
+                'id',
+                'username',
+                'first_name',
+                'email',
+                'date_joined',
+                'last_login',
+                'total_purchases',
+                'last_client_login',
+            )
+        )
+
+        def compute_status(last_seen):
+            if not last_seen:
+                return 'suspendido'
+            hours = (now - last_seen).total_seconds() / 3600.0
+            if hours <= 48:
+                return 'activo'
+            if hours >= 744:
+                return 'suspendido'
+            return 'inactivo'
+
+        filtered = []
+        for row in rows:
+            last_seen = row.get('last_client_login') or row.get('last_login') or row.get('date_joined')
+            st = compute_status(last_seen)
+            if status_filter and st != status_filter:
+                continue
+            filtered.append((row, last_seen, st))
+
+        total_count = len(filtered)
+        offset = (page - 1) * page_size
+        page_items = filtered[offset : offset + page_size]
+
+        results = []
+        for row, last_seen, st in page_items:
+            total_p = row.get('total_purchases') or 0
+            last_iso = None
+            if last_seen:
+                try:
+                    last_iso = timezone.localtime(last_seen).isoformat()
+                except Exception:
+                    last_iso = None
+            results.append(
+                {
+                    'id': row.get('id'),
+                    'full_name': (row.get('first_name') or '').strip() or (row.get('username') or ''),
+                    'email': row.get('email') or '',
+                    'total_purchases': str(total_p),
+                    'last_connection': last_iso,
+                    'status': st,
+                }
+            )
+
+        return Response(
+            {
+                'count': total_count,
+                'page': page,
+                'page_size': page_size,
+                'results': results,
+            }
+        )
+
+
+class EmployeeClientDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk: int):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        User = get_user_model()
+        u = User.objects.filter(id=pk).first()
+        if not u or getattr(u, 'is_staff', False):
+            return Response({'detail': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        if u.id == request.user.id:
+            return Response({'detail': 'No puedes borrarte a ti mismo.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        u.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RegisterView(APIView):

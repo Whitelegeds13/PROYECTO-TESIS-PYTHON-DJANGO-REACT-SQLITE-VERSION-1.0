@@ -35,6 +35,7 @@ import EmployeeSection from './pages/empleado/EmployeeSection.jsx'
 import EmployeeProductCreate from './pages/empleado/EmployeeProductCreate.jsx'
 import EmployeeProducts from './pages/empleado/EmployeeProducts.jsx'
 import EmployeeSales from './pages/empleado/EmployeeSales.jsx'
+import EmployeeClients from './pages/empleado/EmployeeClients.jsx'
 
 export default function App() {
   const navigate = useNavigate()
@@ -184,8 +185,8 @@ export default function App() {
     }
   }
 
-  async function handleClientRegister({ full_name, email, password }) {
-    await register({ full_name, email, password })
+  async function handleClientRegister({ full_name, email, password, address }) {
+    await register({ full_name, email, password, address })
     await handleClientLogin({ email, password })
   }
 
@@ -199,6 +200,8 @@ export default function App() {
     return children
   }
 
+  const sessionActive = Boolean(authReady && getAccessToken())
+  const employeeSessionActive = Boolean(sessionActive && isEmployeeSession())
   const clientLoggedIn = Boolean(authReady && getAccessToken() && !isEmployeeSession())
 
   return (
@@ -225,12 +228,15 @@ export default function App() {
         }}
         onGoLogin={() => navigate('/iniciar-sesion')}
         onGoAccount={() => navigate('/mis-pedidos')}
+        onGoEmployeePanel={() => navigate('/empleado/dashboard')}
         onLogout={() => {
           clearTokens()
           setMe(null)
           navigate('/', { replace: true })
         }}
         showClientSession={clientLoggedIn}
+        sessionActive={sessionActive}
+        employeeSession={employeeSessionActive}
         me={me}
         onSearchSubmit={handleSearchSubmit}
         onRemoveCartItem={handleRemoveCartItem}
@@ -331,7 +337,7 @@ export default function App() {
             <Route path="productos" element={<EmployeeProducts />} />
             <Route path="productos/nuevo" element={<EmployeeProductCreate />} />
             <Route path="ventas" element={<EmployeeSales />} />
-            <Route path="clientes" element={<EmployeeSection title="Clientes" />} />
+            <Route path="clientes" element={<EmployeeClients />} />
             <Route path="entregas" element={<EmployeeSection title="Entregas" />} />
             <Route path="pagos" element={<EmployeeSection title="Pagos" />} />
             <Route path="reportes" element={<EmployeeSection title="Reportes" />} />

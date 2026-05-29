@@ -82,6 +82,10 @@ export default function EmployeeLayout({ onLogout }) {
                 <div className="mt-1 text-2xl font-extrabold tracking-tight text-white/90">{current}</div>
               </div>
               <div className="flex items-center gap-3">
+                <div className="hidden items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs font-extrabold text-emerald-100/90 sm:inline-flex">
+                  <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                  Sesión activa
+                </div>
                 {showAddProduct ? (
                   <button
                     type="button"

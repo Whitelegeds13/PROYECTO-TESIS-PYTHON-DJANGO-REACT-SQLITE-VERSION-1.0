@@ -140,3 +140,11 @@ class LoginEvent(models.Model):
 
     def __str__(self) -> str:
         return f'{self.user_id} {"employee" if self.is_employee else "client"} {self.created_at}'
+
+
+class CustomerProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer_profile')
+    address = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return f'{self.user_id}'
