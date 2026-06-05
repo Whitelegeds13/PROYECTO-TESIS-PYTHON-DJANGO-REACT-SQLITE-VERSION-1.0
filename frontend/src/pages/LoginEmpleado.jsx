@@ -108,7 +108,7 @@ export default function LoginEmpleado() {
               <div className="mt-4 text-center">
                 <div className="text-lg font-extrabold tracking-widest text-white/85">PALACIO GAMER</div>
                 <div className="mt-1 text-xs font-semibold tracking-[0.28em] text-fuchsia-300/80">
-                  ADMIN TERMINAL v3.1
+                  EMPLEADOS TERMINAL v3.1
                 </div>
               </div>
             </div>

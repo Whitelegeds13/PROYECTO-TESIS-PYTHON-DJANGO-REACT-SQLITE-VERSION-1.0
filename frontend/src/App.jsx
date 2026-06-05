@@ -20,7 +20,6 @@ import Footer from './components/Footer.jsx'
 import Header from './components/Header.jsx'
 import Home from './pages/Home.jsx'
 import Hardware from './pages/Hardware.jsx'
-import LoginChoice from './pages/LoginChoice.jsx'
 import Login from './pages/Login.jsx'
 import LoginEmpleado from './pages/LoginEmpleado.jsx'
 import Orders from './pages/Orders.jsx'
@@ -193,7 +192,7 @@ export default function App() {
   }
 
   function ProtectedEmployeeRoute({ children }) {
-    if (!getAccessToken() || !isEmployeeSession()) return <Navigate to="/login-empleado" replace />
+    if (!getAccessToken() || !isEmployeeSession()) return <Navigate to="/empleado" replace />
     return children
   }
 
@@ -298,7 +297,7 @@ export default function App() {
               </ProtectedClientRoute>
             }
           />
-          <Route path="/iniciar-sesion" element={<LoginChoice />} />
+          <Route path="/iniciar-sesion" element={<Navigate to="/login" replace />} />
           <Route
             path="/login"
             element={
@@ -319,17 +318,18 @@ export default function App() {
               />
             }
           />
-          <Route path="/login-empleado" element={<LoginEmpleado />} />
+          <Route path="/login-empleado" element={<Navigate to="/empleado" replace />} />
+          <Route path="/empleado" element={<LoginEmpleado />} />
 
           <Route
-            path="/empleado"
+            path="/empleado/*"
             element={
               <ProtectedEmployeeRoute>
                 <EmployeeLayout
                   onLogout={() => {
                     clearTokens()
                     setMe(null)
-                    navigate('/login-empleado', { replace: true })
+                    navigate('/empleado', { replace: true })
                   }}
                 />
               </ProtectedEmployeeRoute>

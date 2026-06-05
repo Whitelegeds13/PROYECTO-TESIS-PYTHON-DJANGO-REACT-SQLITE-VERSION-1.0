@@ -1,4 +1,4 @@
-import { Building2, UserRound } from 'lucide-react'
+import { UserRound } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 export default function LoginChoice() {
@@ -29,23 +29,6 @@ export default function LoginChoice() {
               </div>
             </div>
             <div className="mt-4 text-sm font-semibold text-cyan-300/90">Ingresar →</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/login-empleado')}
-            className="group rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:border-fuchsia-400/20 hover:bg-white/10"
-          >
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-fuchsia-400/10 p-2 text-fuchsia-200">
-                <Building2 size={18} />
-              </div>
-              <div>
-                <div className="text-sm font-extrabold text-white/90">Empleado</div>
-                <div className="mt-1 text-xs text-white/55">Acceso interno del sistema.</div>
-              </div>
-            </div>
-            <div className="mt-4 text-sm font-semibold text-fuchsia-300/90">Acceder →</div>
           </button>
         </div>
 

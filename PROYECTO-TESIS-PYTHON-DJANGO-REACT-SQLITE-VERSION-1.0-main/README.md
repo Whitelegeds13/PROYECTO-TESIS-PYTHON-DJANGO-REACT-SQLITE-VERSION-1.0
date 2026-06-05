@@ -1,4 +1,33 @@
-# Cómo correr el programa (solo Bash)
+# Cómo correr el programa (Bash y PowerShell)
+
+## PowerShell (Windows)
+
+### 1) Backend (Django + SQLite)
+
+Desde la carpeta raíz del proyecto:
+
+```powershell
+# Si PowerShell bloquea scripts, habilita solo para esta sesión:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+# Activar entorno virtual (en este proyecto está en backend/venv/bin)
+. .\backend\venv\bin\Activate.ps1
+
+# Migraciones + seed + servidor
+python .\backend\manage.py migrate
+python .\backend\manage.py seed_store
+python .\backend\manage.py runserver
+```
+
+### 2) Frontend (React + Vite)
+
+En otra terminal (desde la raíz del proyecto):
+
+```powershell
+cd .\frontend
+npm install
+npm run dev
+```
 
 ## 1) Backend (Django + SQLite)
 
@@ -40,6 +69,24 @@ npm run dev
 - Frontend: http://localhost:5173/
 - Backend: http://127.0.0.1:8000/
 
+## Entrar a Django (Admin)
+
+1) Asegúrate de que el backend esté corriendo:
+- `python .\backend\manage.py runserver` (PowerShell)
+- `python3 backend/manage.py runserver` (Bash)
+
+2) Abre el panel Admin:
+- http://127.0.0.1:8000/admin/
+
+3) Si no tienes un usuario administrador, créalo:
+
+```powershell
+. .\backend\venv\bin\Activate.ps1
+python .\backend\manage.py createsuperuser
+```
+
+Luego vuelve a entrar a `http://127.0.0.1:8000/admin/` e inicia sesión con ese usuario.
+
 ## Cómo funciona el programa
 
 ### Cliente
@@ -71,7 +118,7 @@ npm run dev
 ### Empleado
 
 1) Login de empleado:
-- `http://localhost:5173/login-empleado`
+- `http://localhost:5173/empleado`
 - Usuario (seed): `GMR-0000`
 - Contraseña (seed): `PalacioGamer#2026!`
   - Repartidores creados: `ENT-0001` … `ENT-0005`
