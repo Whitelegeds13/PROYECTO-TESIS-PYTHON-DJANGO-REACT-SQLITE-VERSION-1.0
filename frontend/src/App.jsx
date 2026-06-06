@@ -21,6 +21,7 @@ import Header from './components/Header.jsx'
 import Home from './pages/Home.jsx'
 import Hardware from './pages/Hardware.jsx'
 import Login from './pages/Login.jsx'
+import LoginAdministradores from './pages/LoginAdministradores.jsx'
 import LoginEmpleado from './pages/LoginEmpleado.jsx'
 import Orders from './pages/Orders.jsx'
 import Cart from './pages/Cart.jsx'
@@ -319,6 +320,7 @@ export default function App() {
             }
           />
           <Route path="/login-empleado" element={<Navigate to="/empleado" replace />} />
+          <Route path="/administradores" element={<LoginAdministradores />} />
           <Route path="/empleado" element={<LoginEmpleado />} />
 
           <Route
