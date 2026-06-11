@@ -112,7 +112,7 @@ def build_markdown(repo_root: Path) -> str:
 
     api_lines = ["```mermaid", "flowchart LR"]
     api_lines.append("  FE[Frontend (Vite/React)] -->|/api/* proxy| BE[Backend (Django/DRF)]")
-    api_lines.append("  BE --> DB[(SQLite)]")
+    api_lines.append("  BE --> DB[(MongoDB Atlas)]")
     api_lines.append("  subgraph API[API Endpoints]")
     all_api = sorted(set([p for p in config_paths if p.startswith("api/")] + store_paths))
     for p in all_api:
@@ -138,7 +138,7 @@ def build_markdown(repo_root: Path) -> str:
     seq_lines.append("  participant U as Usuario")
     seq_lines.append("  participant FE as Frontend")
     seq_lines.append("  participant BE as Backend (DRF)")
-    seq_lines.append("  participant DB as SQLite")
+    seq_lines.append("  participant DB as MongoDB Atlas")
     seq_lines.append("  U->>FE: Crear cuenta")
     seq_lines.append("  FE->>BE: POST /api/auth/register/")
     seq_lines.append("  BE->>DB: Crear User")
@@ -164,7 +164,7 @@ def build_markdown(repo_root: Path) -> str:
             "",
             "Este archivo se genera automáticamente.",
             "",
-            "## ERD (SQLite / Django Models)",
+            "## ERD (MongoDB / Django Models)",
             *er_lines,
             "",
             "## Arquitectura (Frontend → Backend → DB)",

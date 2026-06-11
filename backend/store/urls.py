@@ -30,12 +30,15 @@ from .views import (
     ProductListView,
     RegisterView,
 )
+from .views import AdminProtocolDashboardView, AdminOptimizeStockView
 
 urlpatterns = [
     path('categories/', CategoryListView.as_view(), name='categories'),
     path('products/', ProductListView.as_view(), name='products'),
     path('products/<slug:slug>/', ProductDetailView.as_view(), name='product_detail'),
     path('employee/dashboard/', EmployeeDashboardView.as_view(), name='employee_dashboard'),
+    path('employee/admin-dashboard/', AdminProtocolDashboardView.as_view(), name='admin_protocol_dashboard'),
+    path('employee/admin-dashboard/optimize-stock/', AdminOptimizeStockView.as_view(), name='admin_optimize_stock'),
     path('employee/sales/', EmployeeSalesView.as_view(), name='employee_sales'),
     path('employee/payments/', EmployeePaymentsView.as_view(), name='employee_payments'),
     path('employee/payments/export/', EmployeePendingPaymentsExcelView.as_view(), name='employee_payments_export'),

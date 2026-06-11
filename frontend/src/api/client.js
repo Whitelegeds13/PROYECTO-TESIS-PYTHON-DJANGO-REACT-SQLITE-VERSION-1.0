@@ -389,3 +389,11 @@ export async function downloadEmployeePendingPaymentsExcel() {
   const blob = await fetchBlob('/api/employee/payments/export/')
   return blob
 }
+
+export async function getAdminDashboard() {
+  return fetchJson('/api/employee/admin-dashboard/')
+}
+
+export async function optimizeStockProtocol() {
+  return fetchJson('/api/employee/admin-dashboard/optimize-stock/', { method: 'POST' })
+}

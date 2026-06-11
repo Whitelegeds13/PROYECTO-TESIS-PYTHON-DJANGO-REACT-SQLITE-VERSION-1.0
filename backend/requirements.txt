@@ -1,0 +1,7 @@
+Django==5.2.15
+django-mongodb-backend==5.2.3
+django-cors-headers==4.9.0
+djangorestframework==3.17.1
+djangorestframework-simplejwt==5.5.1
+pymongo==4.17.0
+python-dotenv==1.2.2

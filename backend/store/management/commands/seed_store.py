@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django_mongodb_backend import transaction
 from django.utils.text import slugify
 
 from store.models import CartItem, Category, CustomerProfile, Notification, Order, Product

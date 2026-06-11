@@ -1,132 +1,241 @@
-# Cómo correr el programa (Bash y PowerShell)
+# Palacio Gamer
 
-## PowerShell (Windows)
+Aplicacion web desarrollada con Django REST Framework, React, Vite y
+MongoDB Atlas. MongoDB es la unica base de datos utilizada por el proyecto.
 
-### 1) Backend (Django + SQLite)
+## Requisitos
 
-Desde la carpeta raíz del proyecto:
+- Python 3.10 o superior.
+- Node.js 20 o superior.
+- npm.
+- Un cluster de MongoDB Atlas.
 
-```powershell
-# Si PowerShell bloquea scripts, habilita solo para esta sesión:
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+En MongoDB Atlas, la direccion IP del equipo debe estar permitida en
+`Network Access` y el usuario de la base de datos debe tener permisos de
+lectura y escritura.
 
-# Activar entorno virtual (en este proyecto está en backend/venv/bin)
-. .\backend\venv\bin\Activate.ps1
+## Primera instalacion
 
-# Migraciones + seed + servidor
-python .\backend\manage.py migrate
-python .\backend\manage.py seed_store
-python .\backend\manage.py runserver
+### 1. Configurar MongoDB
+
+Dentro de `backend`, cree el archivo `.env` tomando como referencia
+`backend/.env.example`:
+
+```env
+MONGODB_URI=mongodb+srv://USUARIO:CONTRASENA@CLUSTER.mongodb.net/?retryWrites=true&w=majority
+MONGODB_NAME=palacio_gamer
+MONGODB_TIMEOUT_MS=5000
 ```
 
-### 2) Frontend (React + Vite)
+No publique `backend/.env`. El archivo ya esta excluido mediante
+`.gitignore`.
 
-En otra terminal (desde la raíz del proyecto):
+Si la contrasena contiene caracteres especiales como `@`, `:`, `/` o `#`,
+deben codificarse para poder usarlos dentro de una URI.
+
+### 2. Preparar el backend en PowerShell
+
+Desde la raiz del proyecto:
 
 ```powershell
-cd .\frontend
+python -m venv .\backend\.venv
+.\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\backend\.venv\Scripts\python.exe -m pip install -r .\backend\requirements.txt
+.\backend\.venv\Scripts\python.exe .\backend\manage.py migrate
+```
+
+Para crear o actualizar los usuarios y categorias de demostracion:
+
+```powershell
+.\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store
+```
+
+Para crear una cuenta que pueda ingresar al Admin de Django:
+
+```powershell
+.\backend\.venv\Scripts\python.exe .\backend\manage.py createsuperuser
+```
+
+### 3. Preparar el backend en Git Bash para Windows
+
+Desde la raiz del proyecto:
+
+```bash
+python -m venv backend/.venv
+backend/.venv/Scripts/python.exe -m pip install --upgrade pip
+backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
+backend/.venv/Scripts/python.exe backend/manage.py migrate
+backend/.venv/Scripts/python.exe backend/manage.py seed_store
+```
+
+Aunque se use Git Bash, el entorno virtual pertenece a Windows. Por eso los
+ejecutables estan en `Scripts` y no en `bin`.
+
+En Linux o macOS, la ruta equivalente si es:
+
+```bash
+backend/.venv/bin/python
+```
+
+### 4. Preparar el frontend
+
+```powershell
+Set-Location .\frontend
 npm install
-npm run dev
 ```
 
-## 1) Backend (Django + SQLite)
-
-Desde la carpeta raíz del proyecto:
-
-```bash
-python3 -m venv backend/venv
-. backend/venv/bin/activate
-python3 -m pip install --upgrade pip
-python3 -m pip install "Django<6" djangorestframework django-cors-headers djangorestframework-simplejwt
-python3 backend/manage.py migrate
-python3 backend/manage.py seed_store
-python3 backend/manage.py runserver
-```
-
-Si tu terminal está dentro de `backend/` (tu prompt dice `.../backend$`), entonces usa:
-
-```bash
-. venv/bin/activate
-python3 manage.py migrate
-python3 manage.py seed_store
-python3 manage.py runserver
-```
-
-Si aparece `Error: That port is already in use.` detén el backend que ya está corriendo con `Ctrl + C` y vuelve a ejecutar `runserver`.
-
-## 2) Frontend (React + Vite)
-
-En otra terminal (desde la raíz del proyecto):
+En Bash:
 
 ```bash
 cd frontend
 npm install
+```
+
+## Como ejecutar el programa
+
+Se necesitan dos terminales abiertas desde la raiz del proyecto.
+
+### Inicio rapido en Git Bash para Windows
+
+Desde la raiz del proyecto, ejecute primero:
+
+```bash
+backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
+backend/.venv/Scripts/python.exe backend/manage.py migrate
+```
+
+Después abra dos terminales.
+
+### Terminal 1: backend
+
+PowerShell:
+
+```powershell
+.\backend\.venv\Scripts\python.exe .\backend\manage.py runserver
+```
+
+Git Bash para Windows:
+
+```bash
+backend/.venv/Scripts/python.exe backend/manage.py runserver
+```
+
+El backend quedara disponible en:
+
+```text
+http://127.0.0.1:8000/
+```
+
+### Terminal 2: frontend
+
+PowerShell:
+
+```powershell
+Set-Location .\frontend
 npm run dev
 ```
 
-## Abrir
+Git Bash, Linux o macOS:
 
-- Frontend: http://localhost:5173/
-- Backend: http://127.0.0.1:8000/
-
-## Entrar a Django (Admin)
-
-1) Asegúrate de que el backend esté corriendo:
-- `python .\backend\manage.py runserver` (PowerShell)
-- `python3 backend/manage.py runserver` (Bash)
-
-2) Abre el panel Admin:
-- http://127.0.0.1:8000/admin/
-
-3) Si no tienes un usuario administrador, créalo:
-
-```powershell
-. .\backend\venv\bin\Activate.ps1
-python .\backend\manage.py createsuperuser
+```bash
+cd frontend
+npm run dev
 ```
 
-Luego vuelve a entrar a `http://127.0.0.1:8000/admin/` e inicia sesión con ese usuario.
+El frontend quedara disponible en:
 
-## Cómo funciona el programa
+```text
+http://localhost:5173/
+```
 
-### Cliente
+Vite redirige automaticamente las solicitudes `/api` y `/media` al backend
+en `http://127.0.0.1:8000`.
 
-1) Registro e inicio de sesión:
-- Registro: `http://localhost:5173/registro` (crea el usuario en SQLite).
-- Login: `http://localhost:5173/login` (ingresas con **correo + contraseña**).
-  - En registro ahora se pide: nombre completo, correo, dirección y teléfono.
+## Accesos de demostracion
 
-2) Compra:
-- Catálogo: `http://localhost:5173/hardware`
-- Agregar al carrito (requiere sesión de cliente).
-- Carrito: `http://localhost:5173/carrito`
-- Resumen de compra: `http://localhost:5173/checkout` (requiere sesión).
-- Pago: `http://localhost:5173/pago` (requiere sesión).
-  - Métodos: Tarjeta / Transferencia Bancaria / Yape-Plin.
-  - Transferencia y Yape/Plin: permite subir comprobante (imagen/PDF).
+Empleado:
 
-3) Confirmación y pedidos:
-- Al confirmar el pago, se crea un pago con **código único** `PG-XXXX-XX-AAAA` y se redirige a la confirmación:
-  - `http://localhost:5173/pago/confirmacion/<codigo>`
-- Estado de sincronización inicial: **En espera** (luego se cambiará desde el panel de empleado).
-- Mis pedidos: `http://localhost:5173/mis-pedidos`
+```text
+URL: http://localhost:5173/empleado
+Usuario: GMR-0000
+Contrasena: PalacioGamer#2026!
+```
 
-4) Stock automático:
-- Cuando se confirma un pago, el sistema descuenta el **stock** del producto en la base de datos (SQLite).
-- Si intentas comprar más unidades que el stock disponible, el sistema lo bloquea.
+Cliente:
 
-### Empleado
+```text
+URL: http://localhost:5173/login
+Usuario: CLT-0000
+Contrasena: PalacioGamerCliente#2026!
+```
 
-1) Login de empleado:
-- `http://localhost:5173/empleado`
-- Usuario (seed): `GMR-0000`
-- Contraseña (seed): `PalacioGamer#2026!`
-  - Repartidores creados: `ENT-0001` … `ENT-0005`
+Admin de Django:
 
-2) Panel de empleado:
-- Dashboard (métricas desde BD): `http://localhost:5173/empleado/dashboard`
-- Productos (CRUD): `http://localhost:5173/empleado/productos`
-- Ventas (datos reales, 24h y top productos disponibles): `http://localhost:5173/empleado/ventas`
-- Clientes (listar/borrar, estado por horas): `http://localhost:5173/empleado/clientes`
-- Entregas (asignar repartidor, evidencia y confirmar entrega): `http://localhost:5173/empleado/entregas`
-- Pagos (validación: pendientes, rechazados y aprobados + descargar Excel): `http://localhost:5173/empleado/pagos`
+```text
+http://127.0.0.1:8000/admin/
+```
+
+El Admin requiere la cuenta creada con `createsuperuser`.
+
+## Comandos utiles
+
+Comprobar la configuracion del backend:
+
+```powershell
+.\backend\.venv\Scripts\python.exe .\backend\manage.py check --database default
+```
+
+Aplicar nuevas migraciones:
+
+```powershell
+.\backend\.venv\Scripts\python.exe .\backend\manage.py migrate
+```
+
+Recrear los datos de demostracion:
+
+```powershell
+.\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store --reset
+```
+
+`--reset` elimina categorias, productos, pedidos, notificaciones y elementos
+del carrito antes de ejecutar el seed. No debe utilizarse sobre informacion
+que se quiera conservar.
+
+Construir el frontend para produccion:
+
+```powershell
+Set-Location .\frontend
+npm run build
+```
+
+## Problemas comunes
+
+### El backend no conecta con MongoDB
+
+Revise:
+
+- que `backend/.env` exista;
+- que `MONGODB_URI` no conserve los textos `USUARIO`, `CONTRASENA` o
+  `CLUSTER`;
+- que la IP del equipo este permitida en MongoDB Atlas;
+- que el usuario de Atlas tenga permisos sobre la base configurada;
+- que la contrasena tenga sus caracteres especiales codificados.
+
+### El frontend muestra "Backend no disponible"
+
+Compruebe que Django este ejecutandose en:
+
+```text
+http://127.0.0.1:8000/
+```
+
+### El puerto ya esta ocupado
+
+Detenga el proceso anterior con `Ctrl + C` o ejecute Django en otro puerto:
+
+```powershell
+.\backend\.venv\Scripts\python.exe .\backend\manage.py runserver 8001
+```
+
+Si cambia el puerto del backend, tambien debe actualizar el destino del proxy
+en `frontend/vite.config.js`.

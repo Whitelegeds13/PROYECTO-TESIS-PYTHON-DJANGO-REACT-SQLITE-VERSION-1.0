@@ -4,6 +4,8 @@ from .models import CartItem, Category, Notification, Order, Product
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+
     class Meta:
         model = Category
         fields = [
@@ -18,6 +20,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
     category = CategorySerializer()
     image_url = serializers.SerializerMethodField()
 
@@ -78,6 +81,8 @@ class EmployeeProductCreateSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+
     class Meta:
         model = Order
         fields = [
@@ -98,6 +103,8 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class NotificationSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+
     class Meta:
         model = Notification
         fields = [
@@ -111,6 +118,8 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+
     class Meta:
         model = CartItem
         fields = [

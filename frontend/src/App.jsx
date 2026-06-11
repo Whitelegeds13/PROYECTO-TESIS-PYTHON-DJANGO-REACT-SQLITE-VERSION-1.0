@@ -328,6 +328,7 @@ export default function App() {
             element={
               <ProtectedEmployeeRoute>
                 <EmployeeLayout
+                  me={me}
                   onLogout={() => {
                     clearTokens()
                     setMe(null)

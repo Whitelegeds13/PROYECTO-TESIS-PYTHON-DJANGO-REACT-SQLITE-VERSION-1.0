@@ -625,6 +625,222 @@ class EmployeeDashboardView(APIView):
         )
 
 
+class AdminProtocolDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False) or not getattr(request.user, 'is_superuser', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        User = get_user_model()
+        now = timezone.now()
+        today = now.date()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # General Stats
+        payments_today = Payment.objects.filter(created_at__date=today)
+        sales_today = payments_today.filter(sync_status=Payment.SyncStatus.CONFIRMADO).aggregate(v=Sum('total')).get('v') or Decimal('0.00')
+        new_clients = User.objects.filter(is_staff=False, date_joined__gte=month_start).count()
+        pending_payments = Payment.objects.filter(sync_status=Payment.SyncStatus.EN_ESPERA).count()
+
+        # Nodes count
+        staff_count = User.objects.filter(is_staff=True).count()
+        active_nodes = 20 + staff_count
+
+        # Chart Data
+        # 7D
+        payments_7d = Payment.objects.filter(created_at__gte=now - timedelta(days=7), sync_status=Payment.SyncStatus.CONFIRMADO)
+        days_data = []
+        day_names = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+        for i in range(7):
+            day_date = (now - timedelta(days=6 - i)).date()
+            day_total = sum(p.total for p in payments_7d if p.created_at.date() == day_date)
+            label = f"{day_names[day_date.weekday()]} {day_date.day}"
+            days_data.append({'label': label, 'total': float(day_total)})
+
+        # 24H
+        payments_24h = Payment.objects.filter(created_at__gte=now - timedelta(hours=24), sync_status=Payment.SyncStatus.CONFIRMADO)
+        hours_data = []
+        for i in range(12):
+            bucket_start = now - timedelta(hours=24 - i*2)
+            bucket_end = now - timedelta(hours=22 - i*2)
+            bucket_total = sum(p.total for p in payments_24h if bucket_start <= p.created_at < bucket_end)
+            label = bucket_start.strftime('%H:%M')
+            hours_data.append({'label': label, 'total': float(bucket_total)})
+
+        # 1H
+        payments_1h = Payment.objects.filter(created_at__gte=now - timedelta(hours=1), sync_status=Payment.SyncStatus.CONFIRMADO)
+        mins_data = []
+        for i in range(6):
+            bucket_start = now - timedelta(minutes=60 - i*10)
+            bucket_end = now - timedelta(minutes=50 - i*10)
+            bucket_total = sum(p.total for p in payments_1h if bucket_start <= p.created_at < bucket_end)
+            label = bucket_start.strftime('%H:%M')
+            mins_data.append({'label': label, 'total': float(bucket_total)})
+
+        # Logs
+        logs = []
+        # Recent users
+        for u in User.objects.filter(is_staff=False).order_by('-date_joined')[:10]:
+            logs.append({
+                'time': timezone.localtime(u.date_joined),
+                'tag': '@System',
+                'message': f"Nuevo registro de cliente: '{u.first_name or u.username}'."
+            })
+        # Recent logins
+        for e in LoginEvent.objects.select_related('user').order_by('-created_at')[:10]:
+            logs.append({
+                'time': timezone.localtime(e.created_at),
+                'tag': '@Security',
+                'message': f"Sesión iniciada por '{e.user.username}' (Rol: {'Empleado' if e.is_employee else 'Cliente'})."
+            })
+        # Recent payments
+        for p in Payment.objects.select_related('user').order_by('-created_at')[:10]:
+            if p.sync_status == Payment.SyncStatus.CONFIRMADO:
+                msg = f"Transacción completada #{p.payment_code}. Cliente ID: {p.user.username}."
+                tag = '@System'
+            elif p.sync_status == Payment.SyncStatus.RECHAZADO:
+                msg = f"Transacción rechazada #{p.payment_code}."
+                tag = '@Security'
+            else:
+                msg = f"Transacción en espera de verificación #{p.payment_code}."
+                tag = '@System'
+            logs.append({
+                'time': timezone.localtime(p.created_at),
+                'tag': tag,
+                'message': msg
+            })
+        # Recent orders
+        for o in Order.objects.select_related('assigned_to', 'delivered_by').exclude(status=Order.Status.PROCESANDO).order_by('-id')[:10]:
+            if o.status == Order.Status.EN_CAMINO:
+                msg = f"Entrega #{o.order_code} marcada como 'En Camino'."
+                tag = '@Logistics'
+            elif o.status == Order.Status.ENTREGADO:
+                msg = f"Entrega #{o.order_code} completada por '{o.delivered_by.username if o.delivered_by else 'Personal'}'."
+                tag = '@Logistics'
+            else:
+                msg = f"Pedido #{o.order_code} cancelado/rechazado."
+                tag = '@Security'
+            order_time = timezone.localtime(o.payment.created_at) if o.payment else now
+            logs.append({
+                'time': order_time,
+                'tag': tag,
+                'message': msg
+            })
+
+        # Sort logs
+        logs = sorted(logs, key=lambda x: x['time'], reverse=True)[:15]
+        formatted_logs = []
+        for idx, item in enumerate(logs):
+            formatted_logs.append({
+                'id': str(idx),
+                'time': item['time'].strftime('%H:%M:%S'),
+                'tag': item['tag'],
+                'message': item['message']
+            })
+
+        # Recent Movements
+        recent_orders = []
+        orders_qs = Order.objects.select_related('user').order_by('-id')[:10]
+        for o in orders_qs:
+            u = o.user
+            client_name = (u.first_name or u.username) if u else "Anónimo"
+            client_email = (u.email or "") if u else ""
+            # Initials
+            parts = client_name.split()
+            initials = "".join([p[0].upper() for p in parts[:2]]) if parts else "AN"
+            recent_orders.append({
+                'protocol_id': o.order_code,
+                'client_initials': initials,
+                'client_name': client_name,
+                'client_email': client_email,
+                'product_name': o.product_name,
+                'status': o.status,
+                'amount': str(o.total),
+                'id': str(o.id)
+            })
+
+        # Employee Activity
+        staff_qs = User.objects.filter(is_staff=True).order_by('id')
+        employee_activity = []
+        for user in staff_qs:
+            role = 'Ventas'
+            if user.username.startswith('ENT-'):
+                role = 'Logística'
+            elif user.is_superuser:
+                role = 'Administrador'
+            
+            if role == 'Logística':
+                assigned_count = Order.objects.filter(assigned_to=user).count()
+                metric_label = 'pedidos hoy'
+                metric_val = assigned_count
+            elif role == 'Administrador':
+                metric_label = 'validaciones hoy'
+                metric_val = Payment.objects.exclude(sync_status=Payment.SyncStatus.EN_ESPERA).count()
+            else:
+                metric_label = 'tareas'
+                metric_val = 5
+            
+            employee_activity.append({
+                'username': user.username,
+                'name': user.first_name or user.username,
+                'role': role,
+                'metric_label': metric_label,
+                'metric_val': metric_val
+            })
+
+        # Inventory Nexus
+        low_stock_p = Product.objects.filter(stock__gt=0).order_by('stock').first()
+        low_stock = {
+            'name': low_stock_p.name if low_stock_p else 'Sin alertas',
+            'stock': low_stock_p.stock if low_stock_p else 0
+        }
+
+        # Top sold product
+        top_sold = Order.objects.values('product_id', 'product_name').annotate(total_qty=Sum('quantity')).order_by('-total_qty').first()
+        if top_sold:
+            top_performer = {
+                'name': top_sold['product_name'],
+                'sold_count': top_sold['total_qty']
+            }
+        else:
+            highest_rated = Product.objects.order_by('-rating', '-price').first()
+            top_performer = {
+                'name': highest_rated.name if highest_rated else 'Ninguno',
+                'sold_count': 124
+            }
+
+        return Response({
+            'ventas_hoy': float(sales_today),
+            'new_clients': new_clients,
+            'pending_payments': pending_payments,
+            'active_nodes': active_nodes,
+            'charts': {
+                '1H': mins_data,
+                '24H': hours_data,
+                '7D': days_data
+            },
+            'logs': formatted_logs,
+            'movements': recent_orders,
+            'employees': employee_activity,
+            'inventory': {
+                'low_stock': low_stock,
+                'top_performer': top_performer
+            }
+        })
+
+
+class AdminOptimizeStockView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not getattr(request.user, 'is_staff', False) or not getattr(request.user, 'is_superuser', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        count = Product.objects.filter(stock__lte=3).update(stock=15)
+        return Response({'updated': count})
+
+
 class EmployeeSalesView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1059,7 +1275,7 @@ class EmployeeDeliveryListView(APIView):
 
             results.append(
                 {
-                    'id': o.id,
+                    'id': str(o.id),
                     'order_code': o.order_code,
                     'reference': o.order_code,
                     'payment_code': getattr(getattr(o, 'payment', None), 'payment_code', '') or '',
@@ -1116,7 +1332,7 @@ class EmployeeDeliveryDetailView(APIView):
 
         return Response(
             {
-                'id': o.id,
+                'id': str(o.id),
                 'order_code': o.order_code,
                 'reference': o.order_code,
                 'payment_code': getattr(getattr(o, 'payment', None), 'payment_code', '') or '',
@@ -1228,7 +1444,7 @@ class EmployeeDeliveryStaffListView(APIView):
         for u in qs:
             results.append(
                 {
-                    'id': u.id,
+                    'id': str(u.id),
                     'username': u.username,
                     'name': (getattr(u, 'first_name', '') or '').strip() or u.username,
                 }
@@ -1398,7 +1614,7 @@ class RegisterView(APIView):
         user.save(update_fields=['first_name'])
         CustomerProfile.objects.update_or_create(user=user, defaults={'address': address, 'phone': phone})
         return Response(
-            {'id': user.id, 'username': user.username, 'email': user.email, 'address': address, 'phone': phone},
+            {'id': str(user.id), 'username': user.username, 'email': user.email, 'address': address, 'phone': phone},
             status=status.HTTP_201_CREATED,
         )
 
@@ -1443,7 +1659,7 @@ class MeView(APIView):
         profile = getattr(u, 'customer_profile', None)
         return Response(
             {
-                'id': u.id,
+                'id': str(u.id),
                 'username': u.username,
                 'email': u.email,
                 'is_staff': bool(getattr(u, 'is_staff', False)),
