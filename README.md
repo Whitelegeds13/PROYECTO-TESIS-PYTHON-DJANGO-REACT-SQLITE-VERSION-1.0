@@ -1,236 +1,126 @@
-# Palacio Gamer
+# Palacio Gamer - Plataforma de E-Commerce
 
-Aplicacion web desarrollada con Django REST Framework, React, Vite y
-MongoDB Atlas. MongoDB es la unica base de datos utilizada por el proyecto.
+Plataforma web moderna de comercio electrónico (E-commerce) y administración para **Palacio Gamer**, desarrollada utilizando una arquitectura desacoplada: un backend de alto rendimiento con **FastAPI (Python)** y un frontend interactivo con **React** (empaquetado con **Vite**). Todo esto conectado a una base de datos NoSQL escalable en **MongoDB Atlas**.
 
-## Requisitos
+---
 
-- Python 3.10 o superior.
-- Node.js 20 o superior.
-- npm.
-- Un cluster de MongoDB Atlas.
+## 🛠️ Requisitos del Sistema
 
-En MongoDB Atlas, la direccion IP del equipo debe estar permitida en
-`Network Access` y el usuario de la base de datos debe tener permisos de
-lectura y escritura.
+Para ejecutar este proyecto de manera local, asegúrate de tener instalado:
 
-## Primera instalacion
+- **Python 3.10+** (junto con el administrador de paquetes `pip`).
+- **Node.js 20+** (junto con `npm`).
+- **Git / Git Bash** (especialmente recomendado para usuarios de Windows).
+- Acceso a un clúster de **MongoDB Atlas** (con su IP habilitada en el Network Access y un usuario con permisos de lectura/escritura).
 
-### 1. Configurar MongoDB
+---
 
-Dentro de `backend`, cree el archivo `.env` tomando como referencia
-`backend/.env.example`:
+## ⚙️ Configuración Inicial
 
+### 1. Variables de Entorno del Backend
+Dentro del directorio `backend/`, crea un archivo llamado `.env` tomando como base la plantilla `backend/.env.example`. 
+
+Configura tus credenciales de MongoDB Atlas:
 ```env
-MONGODB_URI=mongodb+srv://USUARIO:CONTRASENA@CLUSTER.mongodb.net/?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://<usuario>:<contraseña>@<tu-cluster>.mongodb.net/?retryWrites=true&w=majority
 MONGODB_NAME=palacio_gamer
 MONGODB_TIMEOUT_MS=5000
 ```
+> [!WARNING]
+> Si la contraseña de MongoDB Atlas contiene caracteres especiales como `@`, `:`, `/` o `#`, asegúrate de codificarlos en formato URL (URL encoding) antes de colocarlos en el URI.
 
-No publique `backend/.env`. El archivo ya esta excluido mediante
-`.gitignore`.
+---
 
-Si la contrasena contiene caracteres especiales como `@`, `:`, `/` o `#`,
-deben codificarse para poder usarlos dentro de una URI.
+## 🚀 Guía de Instalación y Ejecución (Solo en Bash)
 
-### 2. Preparar el backend (Bash)
+Sigue estos pasos en tu terminal compatible con Bash (como Git Bash en Windows, o la terminal nativa de macOS y Linux).
 
-Desde la raiz del proyecto:
+### Paso 1: Preparar e Instalar el Backend
 
-**Para Windows (Git Bash):**
+Abre una terminal en la raíz del proyecto y ejecuta la siguiente secuencia de comandos:
+
 ```bash
+# 1. Crear el entorno virtual en la carpeta del backend
 python -m venv backend/.venv
-backend/.venv/Scripts/python.exe -m pip install --upgrade pip
-backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
-backend/.venv/Scripts/python.exe backend/manage.py migrate
+
+# 2. Activar el entorno virtual en Bash
+# (Funciona para Git Bash en Windows, macOS y Linux)
+source backend/.venv/Scripts/activate || source backend/.venv/bin/activate
+
+# 3. Actualizar pip e instalar dependencias requeridas para FastAPI
+pip install --upgrade pip
+pip install -r backend/requirements.txt
 ```
 
-**Para Linux / macOS:**
-```bash
-python3 -m venv backend/.venv
-backend/.venv/bin/python -m pip install --upgrade pip
-backend/.venv/bin/python -m pip install -r backend/requirements.txt
-backend/.venv/bin/python backend/manage.py migrate
-```
+### Paso 2: Preparar e Instalar el Frontend
 
-Para crear o actualizar los usuarios y categorias de demostracion:
-
-**Windows (Git Bash):**
-```bash
-backend/.venv/Scripts/python.exe backend/manage.py seed_store
-```
-
-**Linux / macOS:**
-```bash
-backend/.venv/bin/python backend/manage.py seed_store
-```
-
-Para crear una cuenta que pueda ingresar al Admin de Django:
-
-**Windows (Git Bash):**
-```bash
-backend/.venv/Scripts/python.exe backend/manage.py createsuperuser
-```
-
-**Linux / macOS:**
-```bash
-backend/.venv/bin/python backend/manage.py createsuperuser
-```
-
-### 3. Preparar el frontend (Bash)
-
-Desde la raiz del proyecto:
+En una nueva terminal o cambiando de directorio en tu terminal actual:
 
 ```bash
+# 1. Entrar al directorio del frontend
 cd frontend
+
+# 2. Instalar los paquetes de Node.js
 npm install
 ```
 
-## Como ejecutar el programa (Bash)
+---
 
-Se necesitan dos terminales abiertas desde la raiz del proyecto.
+## 💻 Ejecución del Proyecto en Desarrollo
 
-### Terminal 1: backend (Servidor Backend)
+Para ejecutar el programa de manera simultánea en modo desarrollo, necesitarás abrir **dos terminales de Bash** desde la raíz del proyecto:
 
-**Windows (Git Bash):**
+### 🔴 Terminal 1: Servidor Backend (FastAPI + PyMongo)
+Desde la raíz del proyecto:
 ```bash
-backend/.venv/Scripts/python.exe backend/manage.py runserver
-```
+# 1. Activar el entorno virtual
+source backend/.venv/Scripts/activate || source backend/.venv/bin/activate
 
-**Linux / macOS:**
+# 2. Ejecutar el backend con Uvicorn
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+```
+- El servidor FastAPI se levantará en: `http://127.0.0.1:8000`
+- La documentación interactiva de la API (Swagger UI) estará disponible en: `http://127.0.0.1:8000/docs`
+
+### 🔵 Terminal 2: Servidor Frontend (React + Vite)
+Desde la raíz del proyecto:
 ```bash
-backend/.venv/bin/python backend/manage.py runserver
-```
-
-El backend quedara disponible en:
-```text
-http://127.0.0.1:8000/
-```
-
-### Terminal 2: frontend (Servidor Frontend)
-
-Desde la raiz del proyecto:
-```bash
+# 1. Entrar al directorio del frontend
 cd frontend
+
+# 2. Iniciar el servidor de desarrollo de Vite
 npm run dev
 ```
+- El frontend se ejecutará en: `http://localhost:5173`
+- Vite redirigirá de manera transparente las peticiones `/api` y `/media` al backend local de FastAPI configurado en el puerto `8000`.
 
-El frontend quedara disponible en:
-```text
-http://localhost:5173/
-```
+---
 
-Vite redirige automaticamente las solicitudes `/api` y `/media` al backend en `http://127.0.0.1:8000`.
+## 🔑 Credenciales de Demostración
 
-## Accesos de demostracion
+Una vez que ambos servidores estén activos, puedes probar el sistema usando las siguientes cuentas:
 
-Empleado:
+### 👤 Panel de Cliente (Tienda)
+- **URL de acceso:** `http://localhost:5173/login`
+- **Usuario (Client ID):** `CLT-0000`
+- **Contraseña:** `PalacioGamerCliente#2026!`
 
-```text
-URL: http://localhost:5173/empleado
-Usuario: GMR-0000
-Contrasena: PalacioGamer#2026!
-```
+### 💼 Panel de Empleado (Ventas / Entregas)
+- **URL de acceso:** `http://localhost:5173/empleado`
+- **Usuario (Employee ID):** `GMR-0000`
+- **Contraseña:** `PalacioGamer#2026!`
 
-Cliente:
+---
 
-```text
-URL: http://localhost:5173/login
-Usuario: CLT-0000
-Contrasena: PalacioGamerCliente#2026!
-```
+## 🔧 Resolución de Problemas Comunes
 
-Admin de Django:
+### 1. El backend no logra conectar a MongoDB Atlas
+- Comprueba que tu dirección IP externa actual esté habilitada en la pestaña **Network Access** en la consola de MongoDB Atlas.
+- Verifica que el archivo `backend/.env` se llame exactamente así y que contenga las credenciales correctas.
 
-```text
-http://127.0.0.1:8000/admin/
-```
-
-El Admin requiere la cuenta creada con `createsuperuser`.
-
-## Comandos utiles (Bash)
-
-Comprobar la configuracion del backend:
-
-**Windows (Git Bash):**
+### 2. Error de puerto ocupado (puerto 8000)
+Si el puerto 8000 está en uso por otro proceso, puedes indicarle a Uvicorn que se ejecute en un puerto alternativo (por ejemplo, `8001`):
 ```bash
-backend/.venv/Scripts/python.exe backend/manage.py check --database default
+uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 ```
-
-**Linux / macOS:**
-```bash
-backend/.venv/bin/python backend/manage.py check --database default
-```
-
-Aplicar nuevas migraciones:
-
-**Windows (Git Bash):**
-```bash
-backend/.venv/Scripts/python.exe backend/manage.py migrate
-```
-
-**Linux / macOS:**
-```bash
-backend/.venv/bin/python backend/manage.py migrate
-```
-
-Recrear los datos de demostracion:
-
-**Windows (Git Bash):**
-```bash
-backend/.venv/Scripts/python.exe backend/manage.py seed_store --reset
-```
-
-**Linux / macOS:**
-```bash
-backend/.venv/bin/python backend/manage.py seed_store --reset
-```
-
-`--reset` elimina categorias, productos, pedidos, notificaciones y elementos
-del carrito antes de ejecutar el seed. No debe utilizarse sobre informacion
-que se quiera conservar.
-
-Construir el frontend para produccion:
-
-```bash
-cd frontend
-npm run build
-```
-
-## Problemas comunes
-
-### El backend no conecta con MongoDB
-
-Revise:
-
-- que `backend/.env` exista;
-- que `MONGODB_URI` no conserve los textos `USUARIO`, `CONTRASENA` o
-  `CLUSTER`;
-- que la IP del equipo este permitida en MongoDB Atlas;
-- que el usuario de Atlas tenga permisos sobre la base configurada;
-- que la contrasena tenga sus caracteres especiales codificados.
-
-### El frontend muestra "Backend no disponible"
-
-Compruebe que Django este ejecutandose en:
-
-```text
-http://127.0.0.1:8000/
-```
-
-### El puerto ya esta ocupado
-
-Detenga el proceso anterior con `Ctrl + C` o ejecute Django en otro puerto:
-
-**Windows (Git Bash):**
-```bash
-backend/.venv/Scripts/python.exe backend/manage.py runserver 8001
-```
-
-**Linux / macOS:**
-```bash
-backend/.venv/bin/python backend/manage.py runserver 8001
-```
-
-Si cambia el puerto del backend, tambien debe actualizar el destino del proxy
-en `frontend/vite.config.js`.
+*Nota: Si modificas el puerto del backend, asegúrate de actualizar la dirección de proxy de destino en el archivo `frontend/vite.config.js`.*
