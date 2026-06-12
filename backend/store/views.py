@@ -168,7 +168,9 @@ class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        return Notification.objects.all().order_by('-is_new', '-id')
+        return Notification.objects.filter(
+            Q(user=self.request.user) | Q(user__isnull=True)
+        ).order_by('-is_new', '-id')
 
 
 class CartView(APIView):
@@ -205,8 +207,11 @@ class CartAddView(APIView):
             product = None
             if product_id:
                 try:
-                    product = Product.objects.get(id=int(product_id))
-                except (Product.DoesNotExist, ValueError, TypeError):
+                    to_id = product_id
+                    if isinstance(to_id, str) and to_id.isdigit():
+                        to_id = int(to_id)
+                    product = Product.objects.get(id=to_id)
+                except Exception:
                     product = None
             if product is None and product_slug:
                 product = Product.objects.filter(slug=str(product_slug)).first()
@@ -377,7 +382,7 @@ class CheckoutView(APIView):
                     can_track=False,
                     can_cancel=True,
                 )
-                created_ids.append(order.id)
+                created_ids.append(str(order.id))
 
             CartItem.objects.filter(user=request.user).delete()
             return Response({'created': created_ids}, status=status.HTTP_201_CREATED)
@@ -509,12 +514,12 @@ class PaymentCreateView(APIView):
                     can_track=False,
                     can_cancel=True,
                 )
-                created_ids.append(order.id)
+                created_ids.append(str(order.id))
 
             CartItem.objects.filter(user=request.user).delete()
             return Response(
                 {
-                    'payment_id': payment.id,
+                    'payment_id': str(payment.id),
                     'payment_code': payment.payment_code,
                     'sync_status': payment.sync_status,
                     'created': created_ids,
@@ -544,7 +549,7 @@ class PaymentDetailView(APIView):
 
         return Response(
             {
-                'payment_id': payment.id,
+                'payment_id': str(payment.id),
                 'payment_code': payment.payment_code,
                 'method': payment.method,
                 'status': payment.status,
@@ -869,58 +874,79 @@ class EmployeeSalesView(APIView):
             for p in recent
         ]
 
-        buckets_qs = (
-            Payment.objects.filter(created_at__gte=since, created_at__lte=now)
-            .annotate(hour=TruncHour('created_at'))
-            .values('hour')
-            .annotate(total=Sum('total'), count=Count('id'))
-            .order_by('hour')
-        )
-        buckets_map = {timezone.localtime(row['hour']): row for row in buckets_qs if row.get('hour')}
-        hours = []
+        # Fetch all payments in the last 24 hours to group hourly in Python
+        payments_24h = list(Payment.objects.filter(created_at__gte=since, created_at__lte=now))
+        
+        buckets_map = {}
         cursor = timezone.localtime(since).replace(minute=0, second=0, microsecond=0)
         end = timezone.localtime(now).replace(minute=0, second=0, microsecond=0)
         while cursor <= end:
-            row = buckets_map.get(cursor)
+            buckets_map[cursor] = {'total': Decimal('0.00'), 'count': 0}
+            cursor = cursor + timedelta(hours=1)
+
+        for p in payments_24h:
+            p_local = timezone.localtime(p.created_at)
+            p_hour = p_local.replace(minute=0, second=0, microsecond=0)
+            if p_hour in buckets_map:
+                buckets_map[p_hour]['total'] += p.total or Decimal('0.00')
+                buckets_map[p_hour]['count'] += 1
+
+        hours = []
+        cursor = timezone.localtime(since).replace(minute=0, second=0, microsecond=0)
+        while cursor <= end:
+            val = buckets_map[cursor]
             hours.append(
                 {
                     'hour': cursor.strftime('%H:%M'),
-                    'total': str(row.get('total') or '0.00') if row else '0.00',
-                    'count': int(row.get('count') or 0) if row else 0,
+                    'total': str(val['total']),
+                    'count': val['count'],
                 }
             )
             cursor = cursor + timedelta(hours=1)
 
-        top = (
-            Order.objects.select_related('product', 'payment')
-            .filter(payment__created_at__date=today, product__isnull=False)
-            .filter(product__stock__gt=0)
-            .values('product_id', 'product__name', 'product__slug', 'product__image_base64', 'product__image_file')
-            .annotate(quantity=Sum('quantity'), revenue=Sum('total'))
-            .order_by('-quantity', '-revenue')[:5]
+        # Pythonic calculation of top products for today
+        from datetime import datetime
+        start_of_today = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        end_of_today = timezone.make_aware(datetime.combine(today, datetime.max.time()))
+        
+        payments_today = list(Payment.objects.filter(created_at__gte=start_of_today, created_at__lte=end_of_today))
+        orders_today = list(
+            Order.objects.filter(payment__in=payments_today, product__isnull=False)
+            .select_related('product')
         )
-        top_products = []
-        for row in top:
-            product_id = row.get('product_id')
-            img_url = ''
-            if product_id:
-                p = Product.objects.filter(id=product_id).only('image_file').first()
-                if p and getattr(p, 'image_file', None):
+        orders_today = [o for o in orders_today if o.product and (o.product.stock or 0) > 0]
+
+        product_stats = {}
+        for o in orders_today:
+            p = o.product
+            pid = str(p.id) if p else None
+            if not pid:
+                continue
+            if pid not in product_stats:
+                img_url = ''
+                if getattr(p, 'image_file', None):
                     try:
                         img_url = p.image_file.url
                     except Exception:
                         img_url = ''
-            top_products.append(
-                {
-                    'product_id': product_id,
-                    'name': row.get('product__name') or '',
-                    'slug': row.get('product__slug') or '',
-                    'quantity': int(row.get('quantity') or 0),
-                    'revenue': str(row.get('revenue') or '0.00'),
-                    'image_base64': row.get('product__image_base64') or '',
+                product_stats[pid] = {
+                    'product_id': pid,
+                    'name': p.name or '',
+                    'slug': p.slug or '',
+                    'quantity': 0,
+                    'revenue': Decimal('0.00'),
+                    'image_base64': p.image_base64 or '',
                     'image_url': img_url,
                 }
-            )
+            product_stats[pid]['quantity'] += o.quantity or 0
+            product_stats[pid]['revenue'] += o.total or Decimal('0.00')
+
+        top_products = list(product_stats.values())
+        top_products.sort(key=lambda x: (x['quantity'], x['revenue']), reverse=True)
+        top_products = top_products[:5]
+
+        for tp in top_products:
+            tp['revenue'] = str(tp['revenue'])
 
         return Response(
             {
@@ -1133,7 +1159,17 @@ class EmployeePaymentApproveView(APIView):
             p.sync_status = Payment.SyncStatus.CONFIRMADO
             p.status = Payment.Status.CONFIRMED
             p.save(update_fields=['sync_status', 'status'])
-            Order.objects.filter(payment=p).exclude(status=Order.Status.ENTREGADO).update(status=Order.Status.EN_CAMINO)
+            Order.objects.filter(payment=p).exclude(status=Order.Status.ENTREGADO).update(status='empaquetado')
+
+            # Create notification for client
+            Notification.objects.create(
+                user=p.user,
+                title="Pago Aprobado",
+                message=f"¡Buenas noticias! Tu pago para la transacción {p.payment_code} ha sido verificado y aprobado. Tu pedido ya está en empaquetado.",
+                type="payment",
+                time_label="Hace un momento",
+                is_new=True
+            )
 
         return Response({'sync_status': p.sync_status})
 
@@ -1482,27 +1518,28 @@ class EmployeeClientListView(APIView):
             page_size = 10
         page_size = min(max(5, page_size), 50)
 
-        qs = (
-            User.objects.filter(is_staff=False)
-            .annotate(total_purchases=Sum('payments__total'))
-            .annotate(last_client_login=Max('login_events__created_at', filter=Q(login_events__is_employee=False)))
-            .order_by('-date_joined')
-        )
+        # Fetch non-staff users
+        users_qs = User.objects.filter(is_staff=False).order_by('-date_joined')
         if search:
-            qs = qs.filter(Q(email__icontains=search) | Q(username__icontains=search) | Q(first_name__icontains=search))
-
-        rows = list(
-            qs.values(
-                'id',
-                'username',
-                'first_name',
-                'email',
-                'date_joined',
-                'last_login',
-                'total_purchases',
-                'last_client_login',
+            users_qs = users_qs.filter(
+                Q(email__icontains=search) | Q(username__icontains=search) | Q(first_name__icontains=search)
             )
-        )
+        users = list(users_qs)
+
+        # Fetch user payments totals
+        user_payments = {}
+        for p in Payment.objects.all():
+            uid = str(p.user_id) if p.user_id else None
+            if uid:
+                user_payments[uid] = user_payments.get(uid, Decimal('0.00')) + (p.total or Decimal('0.00'))
+
+        # Fetch login events
+        user_logins = {}
+        for le in LoginEvent.objects.filter(is_employee=False):
+            uid = str(le.user_id) if le.user_id else None
+            if uid:
+                if uid not in user_logins or le.created_at > user_logins[uid]:
+                    user_logins[uid] = le.created_at
 
         def compute_status(last_seen):
             if not last_seen:
@@ -1515,34 +1552,46 @@ class EmployeeClientListView(APIView):
             return 'inactivo'
 
         filtered = []
-        for row in rows:
-            last_seen = row.get('last_client_login') or row.get('last_login') or row.get('date_joined')
+        for u in users:
+            uid_str = str(u.id)
+            total_purchases = user_payments.get(uid_str, Decimal('0.00'))
+            last_client_login = user_logins.get(uid_str)
+            last_seen = last_client_login or u.last_login or u.date_joined
             st = compute_status(last_seen)
             if status_filter and st != status_filter:
                 continue
-            filtered.append((row, last_seen, st))
+            
+            filtered.append({
+                'id': uid_str,
+                'username': u.username,
+                'first_name': u.first_name,
+                'email': u.email,
+                'total_purchases': total_purchases,
+                'last_seen': last_seen,
+                'status': st,
+            })
 
         total_count = len(filtered)
         offset = (page - 1) * page_size
         page_items = filtered[offset : offset + page_size]
 
         results = []
-        for row, last_seen, st in page_items:
-            total_p = row.get('total_purchases') or 0
+        for row in page_items:
+            total_p = row['total_purchases']
             last_iso = None
-            if last_seen:
+            if row['last_seen']:
                 try:
-                    last_iso = timezone.localtime(last_seen).isoformat()
+                    last_iso = timezone.localtime(row['last_seen']).isoformat()
                 except Exception:
                     last_iso = None
             results.append(
                 {
-                    'id': row.get('id'),
-                    'full_name': (row.get('first_name') or '').strip() or (row.get('username') or ''),
-                    'email': row.get('email') or '',
+                    'id': row['id'],
+                    'full_name': (row['first_name'] or '').strip() or (row['username'] or ''),
+                    'email': row['email'] or '',
                     'total_purchases': str(total_p),
                     'last_connection': last_iso,
-                    'status': st,
+                    'status': row['status'],
                 }
             )
 
@@ -1725,3 +1774,263 @@ class EmployeeProductListCreateView(generics.ListCreateAPIView):
         if not getattr(request.user, 'is_staff', False):
             return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
         return super().list(request, *args, **kwargs)
+
+
+class EmployeePackagingListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Get all orders that are in 'empaquetado' status
+        empaquetado_orders = list(Order.objects.filter(status='empaquetado'))
+
+        # Extract unique payment IDs from these orders
+        payment_ids = {o.payment_id for o in empaquetado_orders if o.payment_id}
+
+        # Fetch only confirmed payments matching those IDs
+        payments = list(Payment.objects.filter(
+            id__in=list(payment_ids),
+            sync_status=Payment.SyncStatus.CONFIRMADO
+        ).order_by('-created_at'))
+
+        results = []
+        for p in payments:
+            orders = [o for o in empaquetado_orders if o.payment_id == p.id]
+            if not orders:
+                continue
+
+            u = p.user
+            cust_name = ((getattr(u, 'first_name', '') or '').strip() or getattr(u, 'username', '')) if u else 'Anónimo'
+            cust_email = getattr(u, 'email', '') if u else ''
+
+            profile = getattr(u, 'customer_profile', None)
+            phone = getattr(profile, 'phone', '') if profile else ''
+            address = getattr(profile, 'address', '') if profile else ''
+
+            order_items = []
+            for o in orders:
+                img_url = ''
+                if o.product and getattr(o.product, 'image_file', None):
+                    try:
+                        img_url = o.product.image_file.url
+                    except Exception:
+                        img_url = ''
+
+                order_items.append({
+                    'id': str(o.id),
+                    'order_code': o.order_code,
+                    'product_name': o.product_name,
+                    'quantity': o.quantity,
+                    'total': str(o.total),
+                    'image_base64': o.product_image_base64 or '',
+                    'image_url': img_url,
+                })
+
+            results.append({
+                'payment_code': p.payment_code,
+                'customer_name': cust_name,
+                'customer_email': cust_email,
+                'customer_phone': phone,
+                'customer_address': address,
+                'total': str(p.total),
+                'method': p.method,
+                'created_at': timezone.localtime(p.created_at).isoformat(),
+                'items_count': len(order_items),
+                'orders': order_items
+            })
+
+        return Response({'results': results})
+
+
+class EmployeePackagingShipView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request, payment_code: str):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        p = Payment.objects.filter(payment_code=payment_code).first()
+        if not p:
+            return Response({'detail': 'Pago no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        file_obj = request.FILES.get('package_evidence_file')
+        if file_obj:
+            p.package_evidence_file = file_obj
+            p.save(update_fields=['package_evidence_file'])
+
+        with transaction.atomic():
+            Order.objects.filter(payment=p, status='empaquetado').update(status=Order.Status.EN_CAMINO)
+
+        Notification.objects.create(
+            user=p.user,
+            title="Pedido Empaquetado",
+            message=f"Tu pedido {p.payment_code} ha sido empaquetado y transferido a logística para su entrega.",
+            type="shipping",
+            time_label="Hace un momento",
+            is_new=True
+        )
+
+        return Response({'status': 'en_camino'})
+
+
+class EmployeeReportsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        User = get_user_model()
+        now = timezone.now()
+
+        days = 30
+        range_param = request.query_params.get('range', '30days')
+        if range_param == '7days':
+            days = 7
+
+        since = now - timedelta(days=days)
+
+        payments = Payment.objects.filter(
+            created_at__gte=since,
+            sync_status=Payment.SyncStatus.CONFIRMADO
+        )
+
+        total_sales = payments.aggregate(v=Sum('total')).get('v') or Decimal('0.00')
+
+        payments_count = payments.count()
+        avg_ticket = total_sales / payments_count if payments_count > 0 else Decimal('0.00')
+
+        new_clients_count = User.objects.filter(
+            is_staff=False,
+            date_joined__gte=since
+        ).count()
+
+        all_payments_count = Payment.objects.filter(created_at__gte=since).count()
+        conversion_rate = (payments_count / all_payments_count * 100.0) if all_payments_count > 0 else 4.8
+
+        payment_ids = [p.id for p in payments]
+        top_sold = Order.objects.filter(
+            payment_id__in=payment_ids
+        ).values('product_name').annotate(total_qty=Sum('quantity')).order_by('-total_qty')[:5]
+
+        top_products = []
+        for idx, ts in enumerate(top_sold):
+            max_qty = top_sold[0]['total_qty'] if top_sold else 1
+            pct = int((ts['total_qty'] / max_qty) * 100) if max_qty > 0 else 0
+            top_products.append({
+                'name': ts['product_name'],
+                'quantity': ts['total_qty'],
+                'percent': pct
+            })
+
+        chart_data = []
+        day_names = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+        for i in range(days):
+            day_date = (now - timedelta(days=(days - 1) - i)).date()
+            day_total = sum(p.total for p in payments if p.created_at.date() == day_date)
+            label = f"{day_names[day_date.weekday()]} {day_date.day}"
+
+            meta = float(total_sales / days * Decimal('1.15')) if total_sales > 0 else 5000.0
+            chart_data.append({
+                'label': label,
+                'total': float(day_total),
+                'meta': round(meta, 2)
+            })
+
+        recent = Payment.objects.select_related('user').order_by('-created_at')[:8]
+        recent_transactions = []
+        for p in recent:
+            u = p.user
+            cust_name = ((getattr(u, 'first_name', '') or '').strip() or getattr(u, 'username', '')) if u else 'Anónimo'
+
+            parts = cust_name.split()
+            initials = "".join([part[0].upper() for part in parts[:2]]) if parts else "AN"
+
+            first_order = p.orders.first()
+            prod_name = first_order.product_name if first_order else 'Varios Productos'
+
+            recent_transactions.append({
+                'payment_code': p.payment_code,
+                'customer_initials': initials,
+                'customer_name': cust_name,
+                'product_name': prod_name,
+                'created_at': timezone.localtime(p.created_at).strftime('%d %b, %Y - %H:%M'),
+                'status': p.sync_status,
+                'total': str(p.total)
+            })
+
+        return Response({
+            'summary': {
+                'total_sales': str(total_sales),
+                'avg_ticket': str(round(avg_ticket, 2)),
+                'new_clients': new_clients_count,
+                'conversion_rate': round(float(conversion_rate), 1)
+            },
+            'chart_data': chart_data,
+            'top_products': top_products,
+            'recent_transactions': recent_transactions
+        })
+
+
+class EmployeeSettingsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        from store.models import SystemSetting
+
+        pay_setting, _ = SystemSetting.objects.get_or_create(
+            key='accepted_payments',
+            defaults={'value': {'tarjetas': True, 'crypto': True, 'transferencia': False}}
+        )
+        notif_setting, _ = SystemSetting.objects.get_or_create(
+            key='notifications',
+            defaults={'value': {'stock_bajo': True, 'reportes': True, 'logins': False}}
+        )
+
+        u = request.user
+        profile = getattr(u, 'customer_profile', None)
+        bio = getattr(profile, 'bio', '') if profile else ''
+
+        return Response({
+            'admin': {
+                'username': u.username,
+                'email': u.email,
+                'bio': bio
+            },
+            'payments': pay_setting.value,
+            'notifications': notif_setting.value
+        })
+
+    def post(self, request):
+        if not getattr(request.user, 'is_staff', False):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+        from store.models import SystemSetting, CustomerProfile
+        u = request.user
+        data = request.data or {}
+
+        admin_data = data.get('admin', {})
+        if 'email' in admin_data:
+            u.email = admin_data['email']
+        if 'username' in admin_data:
+            u.username = admin_data['username']
+        u.save()
+
+        if 'bio' in admin_data:
+            profile, _ = CustomerProfile.objects.get_or_create(user=u)
+            profile.bio = admin_data['bio']
+            profile.save()
+
+        if 'payments' in data:
+            SystemSetting.objects.filter(key='accepted_payments').update(value=data['payments'])
+
+        if 'notifications' in data:
+            SystemSetting.objects.filter(key='notifications').update(value=data['notifications'])
+
+        return Response({'status': 'saved'})

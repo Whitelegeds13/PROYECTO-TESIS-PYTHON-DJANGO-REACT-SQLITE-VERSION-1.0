@@ -8,7 +8,8 @@ import {
   Truck,
   Users,
   Search,
-  Bell
+  Bell,
+  Archive
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -24,6 +25,7 @@ const NAV_EMPLOYEE = [
   { to: '/empleado/ventas', label: 'Ventas', icon: Box },
   { to: '/empleado/clientes', label: 'Clientes', icon: Users },
   { to: '/empleado/entregas', label: 'Entregas', icon: Truck },
+  { to: '/empleado/empaquetado', label: 'Empaquetado', icon: Archive },
   { to: '/empleado/pagos', label: 'Pagos', icon: CreditCard },
   { to: '/empleado/reportes', label: 'Reportes', icon: BarChart3 },
   { to: '/empleado/configuracion', label: 'Configuración', icon: Settings },
@@ -35,6 +37,7 @@ const NAV_ADMIN = [
   { to: '/empleado/ventas', label: 'Ventas', icon: Box },
   { to: '/empleado/clientes', label: 'Clientes', icon: Users },
   { to: '/empleado/entregas', label: 'Entregas', icon: Truck },
+  { to: '/empleado/empaquetado', label: 'Empaquetado', icon: Archive },
   { to: '/empleado/pagos', label: 'Validación de Pagos', icon: CreditCard },
   { to: '/empleado/reportes', label: 'Reportes', icon: BarChart3 },
   { to: '/empleado/configuracion', label: 'Configuración', icon: Settings },

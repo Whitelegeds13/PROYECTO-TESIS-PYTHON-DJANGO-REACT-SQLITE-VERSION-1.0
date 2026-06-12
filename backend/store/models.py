@@ -45,6 +45,7 @@ class Product(models.Model):
 
 class Order(models.Model):
     class Status(models.TextChoices):
+        EMPAQUETADO = 'empaquetado', 'Empaquetado'
         EN_CAMINO = 'en_camino', 'En Camino'
         ENTREGADO = 'entregado', 'Entregado'
         PROCESANDO = 'procesando', 'Procesando'
@@ -113,6 +114,7 @@ class Payment(models.Model):
     bank_account = models.CharField(max_length=64, blank=True)
     bank_cci = models.CharField(max_length=64, blank=True)
     receipt_file = models.FileField(upload_to='comprobantes/', null=True, blank=True)
+    package_evidence_file = models.FileField(upload_to='paquetes/', null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -121,6 +123,7 @@ class Payment(models.Model):
 
 
 class Notification(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
     title = models.CharField(max_length=120)
     message = models.CharField(max_length=260)
     type = models.CharField(max_length=32, blank=True)
@@ -157,6 +160,15 @@ class CustomerProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer_profile')
     address = models.CharField(max_length=255)
     phone = models.CharField(max_length=20)
+    bio = models.TextField(blank=True, default='')
 
     def __str__(self) -> str:
         return f'{self.user_id}'
+
+
+class SystemSetting(models.Model):
+    key = models.CharField(max_length=64, unique=True)
+    value = models.JSONField(default=dict)
+
+    def __str__(self) -> str:
+        return self.key

@@ -397,3 +397,34 @@ export async function getAdminDashboard() {
 export async function optimizeStockProtocol() {
   return fetchJson('/api/employee/admin-dashboard/optimize-stock/', { method: 'POST' })
 }
+
+export async function getEmployeePackaging() {
+  return fetchJson('/api/employee/packaging/')
+}
+
+export async function shipEmployeePackage(paymentCode, file) {
+  if (!paymentCode) throw new Error('Falta paymentCode')
+  const fd = new FormData()
+  if (file) {
+    fd.append('package_evidence_file', file)
+  }
+  return fetchFormData(`/api/employee/packaging/${encodeURIComponent(String(paymentCode))}/ship/`, fd, { method: 'POST' })
+}
+
+export async function getEmployeeReports(params = {}) {
+  const searchParams = new URLSearchParams()
+  if (params.range) searchParams.set('range', params.range)
+  const qs = searchParams.toString()
+  return fetchJson(`/api/employee/reports/${qs ? `?${qs}` : ''}`)
+}
+
+export async function getEmployeeSettings() {
+  return fetchJson('/api/employee/settings/')
+}
+
+export async function saveEmployeeSettings(data) {
+  return fetchJson('/api/employee/settings/', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
+}

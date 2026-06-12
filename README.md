@@ -1,25 +1,31 @@
-# Palacio Gamer
+# 🎮 Palacio Gamer
 
-Aplicacion web desarrollada con Django REST Framework, React, Vite y
-MongoDB Atlas. MongoDB es la unica base de datos utilizada por el proyecto.
+[![Django](https://img.shields.io/badge/Django-5.2.15-092E20?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![React](https://img.shields.io/badge/React-2026-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite&logoColor=FFD62B)](https://vitejs.dev/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
 
-## Requisitos
+Aplicación web premium para e-commerce de hardware desarrollada con **Django REST Framework (DRF)** en el backend, **React + Vite** en el frontend, y **MongoDB Atlas** como base de datos principal y única.
 
-- Python 3.10 o superior.
-- Node.js 20 o superior.
-- npm.
-- Un cluster de MongoDB Atlas.
+---
 
-En MongoDB Atlas, la direccion IP del equipo debe estar permitida en
-`Network Access` y el usuario de la base de datos debe tener permisos de
-lectura y escritura.
+## 📋 Requisitos Previos
 
-## Primera instalacion
+Asegúrate de tener instalado lo siguiente en tu sistema:
 
-### 1. Configurar MongoDB
+* **Python 3.10** o superior.
+* **Node.js 20** o superior (junto con `npm`).
+* Un clúster de **MongoDB Atlas** activo.
+  > [!IMPORTANT]
+  > Configura el acceso en Atlas (`Network Access`) para permitir la dirección IP de tu equipo y asegúrate de que el usuario de la base de datos tenga permisos de lectura y escritura (`readWrite`).
 
-Dentro de `backend`, cree el archivo `.env` tomando como referencia
-`backend/.env.example`:
+---
+
+## 🛠️ Primera Instalación y Configuración
+
+### 1. Configurar Variables de Entorno
+
+Crea un archivo llamado `.env` dentro de la carpeta `backend/` tomando como referencia el archivo `backend/.env.example`:
 
 ```env
 MONGODB_URI=mongodb+srv://USUARIO:CONTRASENA@CLUSTER.mongodb.net/?retryWrites=true&w=majority
@@ -27,211 +33,165 @@ MONGODB_NAME=palacio_gamer
 MONGODB_TIMEOUT_MS=5000
 ```
 
-No publique `backend/.env`. El archivo ya esta excluido mediante
-`.gitignore`.
+> [!WARNING]
+> Si la contraseña de tu base de datos contiene caracteres especiales como `@`, `:`, `/` o `#`, debes codificarlos en formato URL (URL encoding) antes de ponerlos en la URI.
 
-Si la contrasena contiene caracteres especiales como `@`, `:`, `/` o `#`,
-deben codificarse para poder usarlos dentro de una URI.
+---
 
-### 2. Preparar el backend en PowerShell
+### 2. Preparar el Backend (Servidor Django)
 
-Desde la raiz del proyecto:
+Abre una terminal en la raíz del proyecto y ejecuta los siguientes comandos según tu consola:
 
+#### Opción A: En PowerShell (Recomendado para Windows)
 ```powershell
+# 1. Crear el entorno virtual
 python -m venv .\backend\.venv
+
+# 2. Actualizar pip
 .\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
+
+# 3. Instalar las dependencias
 .\backend\.venv\Scripts\python.exe -m pip install -r .\backend\requirements.txt
+
+# 4. Aplicar las migraciones a MongoDB
 .\backend\.venv\Scripts\python.exe .\backend\manage.py migrate
-```
 
-Para crear o actualizar los usuarios y categorias de demostracion:
-
-```powershell
+# 5. Cargar datos iniciales de prueba (Categorías y Productos)
 .\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store
-```
 
-Para crear una cuenta que pueda ingresar al Admin de Django:
-
-```powershell
+# 6. Crear cuenta de administrador
 .\backend\.venv\Scripts\python.exe .\backend\manage.py createsuperuser
+
 ```
 
-### 3. Preparar el backend en Git Bash para Windows
-
-Desde la raiz del proyecto:
-
+#### Opción B: En Git Bash para Windows / Linux / macOS
 ```bash
+# 1. Crear el entorno virtual
 python -m venv backend/.venv
+
+# 2. Actualizar pip
 backend/.venv/Scripts/python.exe -m pip install --upgrade pip
+
+# 3. Instalar dependencias
 backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
+
+# 4. Aplicar migraciones
 backend/.venv/Scripts/python.exe backend/manage.py migrate
+
+# 5. Cargar datos iniciales de prueba
 backend/.venv/Scripts/python.exe backend/manage.py seed_store
-backend/.venv/Scripts/python.exe backend/manage.py runserver
-
 ```
 
-Aunque se use Git Bash, el entorno virtual pertenece a Windows. Por eso los
-ejecutables estan en `Scripts` y no en `bin`.
+> [!TIP]
+> Si deseas administrar la base de datos a través del panel de administración estándar de Django, crea una cuenta de administrador ejecutando:
+> `.\backend\.venv\Scripts\python.exe .\backend\manage.py createsuperuser`
 
-En Linux o macOS, la ruta equivalente si es:
+---
 
-```bash
-backend/.venv/bin/python
-```
+### 3. Preparar el Frontend (Cliente React)
 
-### 4. Preparar el frontend
-
-En PowerShell (si la ejecución de scripts `.ps1` está bloqueada, usa `npm.cmd` en lugar de `npm`):
-
+#### En PowerShell
 ```powershell
 Set-Location .\frontend
 npm.cmd install
 ```
 
-En Bash:
-
+#### En Git Bash / Linux / macOS
 ```bash
 cd frontend
 npm install
 ```
 
-## Como ejecutar el programa
+---
 
-Se necesitan dos terminales abiertas desde la raiz del proyecto.
+## 🚀 Cómo Ejecutar el Programa
 
-### Terminal 1: backend
+Para iniciar la aplicación, necesitas abrir **dos pestañas o terminales independientes** desde la raíz del proyecto.
 
-PowerShell:
+### 💻 Terminal 1: Backend (Django)
 
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py runserver
-```
+Inicia el servidor backend en el puerto `8000`:
 
-Git Bash para Windows (usa barras normales `/` para evitar que se interpreten como caracteres de escape):
+* **PowerShell**:
+  ```powershell
+  .\backend\.venv\Scripts\python.exe .\backend\manage.py runserver
+  ```
+* **Git Bash / Linux / macOS**:
+  ```bash
+  backend/.venv/Scripts/python.exe backend/manage.py runserver
+  ```
 
-```bash
-backend/.venv/Scripts/python.exe backend/manage.py runserver
-```
+El backend estará disponible en: **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)**
 
-El backend quedara disponible en:
+---
 
-```text
-http://127.0.0.1:8000/
-```
+### 🎨 Terminal 2: Frontend (React + Vite)
 
-### Terminal 2: frontend
+Inicia el servidor de desarrollo frontend en el puerto `5173`:
 
-PowerShell (si la ejecución de scripts `.ps1` está bloqueada, usa `npm.cmd` en lugar de `npm`):
+* **PowerShell**:
+  ```powershell
+  Set-Location .\frontend
+  npm.cmd run dev
+  ```
+* **Git Bash / Linux / macOS**:
+  ```bash
+  cd frontend
+  npm run dev
+  ```
 
-```powershell
-Set-Location .\frontend
-npm.cmd run dev
-```
+El frontend estará disponible en: **[http://localhost:5173/](http://localhost:5173/)**
 
-Git Bash, Linux o macOS:
+> [!NOTE]
+> Vite está preconfigurado para redirigir de forma transparente las solicitudes de `/api` y `/media` directamente al backend de Django en `http://127.0.0.1:8000`.
 
-```bash
-cd frontend
-npm run dev
-```
+---
 
-*Nota para Git Bash:* Si `npm` o `node` no son reconocidos en tu Git Bash, puedes agregar temporalmente el directorio de instalación de Node.js a la ruta de búsqueda ejecutando:
-`export PATH=$PATH:"/c/Program Files/nodejs"`
+## 🔑 Accesos de Demostración
 
-El frontend quedara disponible en:
+| Rol | URL de Acceso | Usuario (Username) | Contraseña (Password) |
+| :--- | :--- | :--- | :--- |
+| **Empleado** | [http://localhost:5173/empleado](http://localhost:5173/empleado) | `GMR-0000` | `PalacioGamer#2026!` |
+| **Cliente** | [http://localhost:5173/login](http://localhost:5173/login) | `CLT-0000` | `PalacioGamerCliente#2026!` |
+| **Admin Django** | [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/) | *El superusuario creado* | *La contraseña ingresada* |
 
-```text
-http://localhost:5173/
-```
+---
 
-Vite redirige automaticamente las solicitudes `/api` y `/media` al backend
-en `http://127.0.0.1:8000`.
+## 🛠️ Comandos de Administración Útiles
 
-## Accesos de demostracion
+* **Verificar la conexión de Django con MongoDB**:
+  ```powershell
+  .\backend\.venv\Scripts\python.exe .\backend\manage.py check --database default
+  ```
 
-Empleado:
+* **Recrear la base de datos de demostración desde cero** (Limpieza y Seed):
+  ```powershell
+  .\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store --reset
+  ```
+  > [!CAUTION]
+  > El argumento `--reset` eliminará todas las categorías, productos, pedidos, notificaciones y elementos de carrito existentes en la base de datos de MongoDB. Úsalo con cuidado.
 
-```text
-URL: http://localhost:5173/empleado
-Usuario: GMR-0000
-Contrasena: PalacioGamer#2026!
-```
+* **Construir el bundle de producción para el Frontend**:
+  ```powershell
+  Set-Location .\frontend
+  npm run build
+  ```
 
-Cliente:
+---
 
-```text
-URL: http://localhost:5173/login
-Usuario: CLT-0000
-Contrasena: PalacioGamerCliente#2026!
-```
+## ❓ Solución de Problemas Comunes
 
-Admin de Django:
+### ❌ El backend no puede conectar a MongoDB
+1. Verifica que el archivo `backend/.env` exista y contenga los datos correctos del clúster.
+2. Comprueba que la dirección IP de tu red local esté añadida en la sección de **Network Access** en la consola de MongoDB Atlas.
+3. Asegúrate de codificar los caracteres especiales en tu contraseña de base de datos.
 
-```text
-http://127.0.0.1:8000/admin/
-```
+### ❌ El frontend muestra "Backend no disponible"
+* Asegúrate de que el servidor de Django en la Terminal 1 esté corriendo correctamente en `http://127.0.0.1:8000`.
 
-El Admin requiere la cuenta creada con `createsuperuser`.
-
-## Comandos utiles
-
-Comprobar la configuracion del backend:
-
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py check --database default
-```
-
-Aplicar nuevas migraciones:
-
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py migrate
-```
-
-Recrear los datos de demostracion:
-
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store --reset
-```
-
-`--reset` elimina categorias, productos, pedidos, notificaciones y elementos
-del carrito antes de ejecutar el seed. No debe utilizarse sobre informacion
-que se quiera conservar.
-
-Construir el frontend para produccion:
-
-```powershell
-Set-Location .\frontend
-npm run build
-```
-
-## Problemas comunes
-
-### El backend no conecta con MongoDB
-
-Revise:
-
-- que `backend/.env` exista;
-- que `MONGODB_URI` no conserve los textos `USUARIO`, `CONTRASENA` o
-  `CLUSTER`;
-- que la IP del equipo este permitida en MongoDB Atlas;
-- que el usuario de Atlas tenga permisos sobre la base configurada;
-- que la contrasena tenga sus caracteres especiales codificados.
-
-### El frontend muestra "Backend no disponible"
-
-Compruebe que Django este ejecutandose en:
-
-```text
-http://127.0.0.1:8000/
-```
-
-### El puerto ya esta ocupado
-
-Detenga el proceso anterior con `Ctrl + C` o ejecute Django en otro puerto:
-
+### ❌ El puerto 8000 ya está ocupado
+Detén el proceso anterior presionando `Ctrl + C` o inicia el backend en otro puerto diferente:
 ```powershell
 .\backend\.venv\Scripts\python.exe .\backend\manage.py runserver 8001
 ```
-
-Si cambia el puerto del backend, tambien debe actualizar el destino del proxy
-en `frontend/vite.config.js`.
+*Si cambias el puerto del backend, asegúrate de actualizar la propiedad `target` del proxy en el archivo `frontend/vite.config.js`.*
