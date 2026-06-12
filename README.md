@@ -33,123 +33,94 @@ No publique `backend/.env`. El archivo ya esta excluido mediante
 Si la contrasena contiene caracteres especiales como `@`, `:`, `/` o `#`,
 deben codificarse para poder usarlos dentro de una URI.
 
-### 2. Preparar el backend en PowerShell
+### 2. Preparar el backend (Bash)
 
 Desde la raiz del proyecto:
 
-```powershell
-python -m venv .\backend\.venv
-.\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\backend\.venv\Scripts\python.exe -m pip install -r .\backend\requirements.txt
-.\backend\.venv\Scripts\python.exe .\backend\manage.py migrate
-```
-
-Para crear o actualizar los usuarios y categorias de demostracion:
-
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store
-```
-
-Para crear una cuenta que pueda ingresar al Admin de Django:
-
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py createsuperuser
-```
-
-### 3. Preparar el backend en Git Bash para Windows
-
-Desde la raiz del proyecto:
-
+**Para Windows (Git Bash):**
 ```bash
 python -m venv backend/.venv
 backend/.venv/Scripts/python.exe -m pip install --upgrade pip
 backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
 backend/.venv/Scripts/python.exe backend/manage.py migrate
+```
+
+**Para Linux / macOS:**
+```bash
+python3 -m venv backend/.venv
+backend/.venv/bin/python -m pip install --upgrade pip
+backend/.venv/bin/python -m pip install -r backend/requirements.txt
+backend/.venv/bin/python backend/manage.py migrate
+```
+
+Para crear o actualizar los usuarios y categorias de demostracion:
+
+**Windows (Git Bash):**
+```bash
 backend/.venv/Scripts/python.exe backend/manage.py seed_store
 ```
 
-Aunque se use Git Bash, el entorno virtual pertenece a Windows. Por eso los
-ejecutables estan en `Scripts` y no en `bin`.
-
-En Linux o macOS, la ruta equivalente si es:
-
+**Linux / macOS:**
 ```bash
-backend/.venv/bin/python
+backend/.venv/bin/python backend/manage.py seed_store
 ```
 
-### 4. Preparar el frontend
+Para crear una cuenta que pueda ingresar al Admin de Django:
 
-```powershell
-Set-Location .\frontend
-npm install
+**Windows (Git Bash):**
+```bash
+backend/.venv/Scripts/python.exe backend/manage.py createsuperuser
 ```
 
-En Bash:
+**Linux / macOS:**
+```bash
+backend/.venv/bin/python backend/manage.py createsuperuser
+```
+
+### 3. Preparar el frontend (Bash)
+
+Desde la raiz del proyecto:
 
 ```bash
 cd frontend
 npm install
 ```
 
-## Como ejecutar el programa
+## Como ejecutar el programa (Bash)
 
 Se necesitan dos terminales abiertas desde la raiz del proyecto.
 
-### Inicio rapido en Git Bash para Windows
+### Terminal 1: backend (Servidor Backend)
 
-Desde la raiz del proyecto, ejecute primero:
-
-```bash
-backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
-backend/.venv/Scripts/python.exe backend/manage.py migrate
-```
-
-Después abra dos terminales.
-
-### Terminal 1: backend
-
-PowerShell:
-
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py runserver
-```
-
-Git Bash para Windows:
-
+**Windows (Git Bash):**
 ```bash
 backend/.venv/Scripts/python.exe backend/manage.py runserver
 ```
 
-El backend quedara disponible en:
+**Linux / macOS:**
+```bash
+backend/.venv/bin/python backend/manage.py runserver
+```
 
+El backend quedara disponible en:
 ```text
 http://127.0.0.1:8000/
 ```
 
-### Terminal 2: frontend
+### Terminal 2: frontend (Servidor Frontend)
 
-PowerShell:
-
-```powershell
-Set-Location .\frontend
-npm run dev
-```
-
-Git Bash, Linux o macOS:
-
+Desde la raiz del proyecto:
 ```bash
 cd frontend
 npm run dev
 ```
 
 El frontend quedara disponible en:
-
 ```text
 http://localhost:5173/
 ```
 
-Vite redirige automaticamente las solicitudes `/api` y `/media` al backend
-en `http://127.0.0.1:8000`.
+Vite redirige automaticamente las solicitudes `/api` y `/media` al backend en `http://127.0.0.1:8000`.
 
 ## Accesos de demostracion
 
@@ -177,24 +148,42 @@ http://127.0.0.1:8000/admin/
 
 El Admin requiere la cuenta creada con `createsuperuser`.
 
-## Comandos utiles
+## Comandos utiles (Bash)
 
 Comprobar la configuracion del backend:
 
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py check --database default
+**Windows (Git Bash):**
+```bash
+backend/.venv/Scripts/python.exe backend/manage.py check --database default
+```
+
+**Linux / macOS:**
+```bash
+backend/.venv/bin/python backend/manage.py check --database default
 ```
 
 Aplicar nuevas migraciones:
 
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py migrate
+**Windows (Git Bash):**
+```bash
+backend/.venv/Scripts/python.exe backend/manage.py migrate
+```
+
+**Linux / macOS:**
+```bash
+backend/.venv/bin/python backend/manage.py migrate
 ```
 
 Recrear los datos de demostracion:
 
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store --reset
+**Windows (Git Bash):**
+```bash
+backend/.venv/Scripts/python.exe backend/manage.py seed_store --reset
+```
+
+**Linux / macOS:**
+```bash
+backend/.venv/bin/python backend/manage.py seed_store --reset
 ```
 
 `--reset` elimina categorias, productos, pedidos, notificaciones y elementos
@@ -203,8 +192,8 @@ que se quiera conservar.
 
 Construir el frontend para produccion:
 
-```powershell
-Set-Location .\frontend
+```bash
+cd frontend
 npm run build
 ```
 
@@ -233,8 +222,14 @@ http://127.0.0.1:8000/
 
 Detenga el proceso anterior con `Ctrl + C` o ejecute Django en otro puerto:
 
-```powershell
-.\backend\.venv\Scripts\python.exe .\backend\manage.py runserver 8001
+**Windows (Git Bash):**
+```bash
+backend/.venv/Scripts/python.exe backend/manage.py runserver 8001
+```
+
+**Linux / macOS:**
+```bash
+backend/.venv/bin/python backend/manage.py runserver 8001
 ```
 
 Si cambia el puerto del backend, tambien debe actualizar el destino del proxy
