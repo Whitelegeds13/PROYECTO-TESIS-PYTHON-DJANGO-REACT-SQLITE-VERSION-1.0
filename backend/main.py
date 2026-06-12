@@ -5,9 +5,17 @@ import uuid
 import secrets
 import hashlib
 import base64
+import unicodedata
+from html import escape
 from decimal import Decimal
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
+
+def slugify(value: str) -> str:
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'[^\w\s-]', '', value).strip().lower()
+    return re.sub(r'[-\s]+', '-', value)
+
 
 # 1. Load Environment & Connect to MongoDB
 import dotenv

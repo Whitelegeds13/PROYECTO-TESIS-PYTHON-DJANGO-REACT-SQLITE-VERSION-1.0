@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 const DEFAULT_CATEGORY_MEDIA_IMAGE = '/media/Gemini_Generated_Image_xf27exf27exf27ex.png'
 
@@ -17,26 +17,6 @@ function imgSrc(dataUri) {
   return `data:image/png;base64,${dataUri}`
 }
 
-function normalizeMediaPath(p) {
-  if (!p) return null
-  if (p.startsWith('/media/')) return encodeURI(p)
-  return p
-}
-
-function mediaCandidatesForSlug(slug) {
-  const s = String(slug || '').trim()
-  if (!s) return []
-  return [
-    `/media/${s}.png`,
-    `/media/${s}.jpg`,
-    `/media/${s}.jpeg`,
-    `/media/category-${s}.png`,
-    `/media/category-${s}.jpg`,
-    `/media/${s.replaceAll('-', '_')}.png`,
-    `/media/${s.replaceAll('-', '_')}.jpg`,
-  ]
-}
-
 export default function CategoryCard({ category, variant = 'md' }) {
   const map = {
     xl: 'md:col-span-2 md:row-span-2 min-h-[260px]',
@@ -45,16 +25,18 @@ export default function CategoryCard({ category, variant = 'md' }) {
   }
 
   const baseImg = imgSrc(category.image_base64)
-  const candidates = useMemo(
-    () => [
-      CATEGORY_MEDIA_BY_SLUG[category.slug],
-      ...mediaCandidatesForSlug(category.slug),
-      DEFAULT_CATEGORY_MEDIA_IMAGE,
-    ].filter(Boolean),
-    [category.slug],
-  )
-  const [candidateIndex, setCandidateIndex] = useState(0)
-  const effectiveImg = normalizeMediaPath(candidates[candidateIndex] || baseImg || null)
+  const effectiveImg = useMemo(() => {
+    // 1. Prefer premium local asset mapped by slug
+    if (CATEGORY_MEDIA_BY_SLUG[category.slug]) {
+      return CATEGORY_MEDIA_BY_SLUG[category.slug]
+    }
+    // 2. Use base64 image from DB if present
+    if (baseImg) {
+      return baseImg
+    }
+    // 3. Fallback to default premium image
+    return DEFAULT_CATEGORY_MEDIA_IMAGE
+  }, [category.slug, baseImg])
 
   return (
     <Link
@@ -70,9 +52,6 @@ export default function CategoryCard({ category, variant = 'md' }) {
             src={effectiveImg}
             alt={category.name}
             className="h-full w-full object-cover opacity-70 blur-[0.3px] transition duration-300 group-hover:scale-[1.03]"
-            onError={() => {
-              setCandidateIndex((i) => (i + 1 < candidates.length ? i + 1 : i))
-            }}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-fuchsia-500/20 via-cyan-400/15 to-sky-400/10" />
