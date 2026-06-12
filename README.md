@@ -66,6 +66,8 @@ backend/.venv/Scripts/python.exe -m pip install --upgrade pip
 backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
 backend/.venv/Scripts/python.exe backend/manage.py migrate
 backend/.venv/Scripts/python.exe backend/manage.py seed_store
+backend/.venv/Scripts/python.exe backend/manage.py runserver
+
 ```
 
 Aunque se use Git Bash, el entorno virtual pertenece a Windows. Por eso los
@@ -79,9 +81,11 @@ backend/.venv/bin/python
 
 ### 4. Preparar el frontend
 
+En PowerShell (si la ejecución de scripts `.ps1` está bloqueada, usa `npm.cmd` en lugar de `npm`):
+
 ```powershell
 Set-Location .\frontend
-npm install
+npm.cmd install
 ```
 
 En Bash:
@@ -95,17 +99,6 @@ npm install
 
 Se necesitan dos terminales abiertas desde la raiz del proyecto.
 
-### Inicio rapido en Git Bash para Windows
-
-Desde la raiz del proyecto, ejecute primero:
-
-```bash
-backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
-backend/.venv/Scripts/python.exe backend/manage.py migrate
-```
-
-Después abra dos terminales.
-
 ### Terminal 1: backend
 
 PowerShell:
@@ -114,7 +107,7 @@ PowerShell:
 .\backend\.venv\Scripts\python.exe .\backend\manage.py runserver
 ```
 
-Git Bash para Windows:
+Git Bash para Windows (usa barras normales `/` para evitar que se interpreten como caracteres de escape):
 
 ```bash
 backend/.venv/Scripts/python.exe backend/manage.py runserver
@@ -128,11 +121,11 @@ http://127.0.0.1:8000/
 
 ### Terminal 2: frontend
 
-PowerShell:
+PowerShell (si la ejecución de scripts `.ps1` está bloqueada, usa `npm.cmd` en lugar de `npm`):
 
 ```powershell
 Set-Location .\frontend
-npm run dev
+npm.cmd run dev
 ```
 
 Git Bash, Linux o macOS:
@@ -141,6 +134,9 @@ Git Bash, Linux o macOS:
 cd frontend
 npm run dev
 ```
+
+*Nota para Git Bash:* Si `npm` o `node` no son reconocidos en tu Git Bash, puedes agregar temporalmente el directorio de instalación de Node.js a la ruta de búsqueda ejecutando:
+`export PATH=$PATH:"/c/Program Files/nodejs"`
 
 El frontend quedara disponible en:
 

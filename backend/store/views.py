@@ -1370,13 +1370,18 @@ class EmployeeDeliveryDetailView(APIView):
             if getattr(o, 'payment', None) and getattr(o.payment, 'sync_status', '') != Payment.SyncStatus.CONFIRMADO:
                 return Response({'detail': 'Pago no aprobado.'}, status=status.HTTP_400_BAD_REQUEST)
             to_id = request.data.get('assigned_to') or request.data.get('assigned_to_id')
-            try:
+            if not to_id:
+                return Response({'detail': 'assigned_to inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if isinstance(to_id, str) and to_id.isdigit():
                 to_id = int(to_id)
+
+            User = get_user_model()
+            try:
+                assignee = User.objects.filter(id=to_id, is_staff=True).first()
             except Exception:
                 return Response({'detail': 'assigned_to inválido.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            User = get_user_model()
-            assignee = User.objects.filter(id=to_id, is_staff=True).first()
             if not assignee or getattr(assignee, 'is_superuser', False):
                 return Response({'detail': 'Repartidor no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
             if not str(getattr(assignee, 'username', '')).startswith('ENT-'):
