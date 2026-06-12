@@ -1,11 +1,15 @@
-# 🎮 Palacio Gamer
+# 🎮 Palacio Gamer (E-commerce de Hardware Premium)
 
 [![Django](https://img.shields.io/badge/Django-5.2.15-092E20?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com/)
-[![React](https://img.shields.io/badge/React-2026-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite&logoColor=FFD62B)](https://vitejs.dev/)
+[![React](https://img.shields.io/badge/React-19.2.5-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8.0.10-646CFF?style=for-the-badge&logo=vite&logoColor=FFD62B)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.17-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
 
-Aplicación web premium para e-commerce de hardware desarrollada con **Django REST Framework (DRF)** en el backend, **React + Vite** en el frontend, y **MongoDB Atlas** como base de datos principal y única.
+Aplicación web premium para e-commerce de hardware desarrollada con **Django REST Framework (DRF)** en el backend, **React (v19) + Vite (v8)** en el frontend, y **MongoDB Atlas** como base de datos principal y única.
+
+> [!NOTE]  
+> **Nota sobre el nombre del repositorio:** Aunque el nombre de la carpeta raíz contenga `SQLITE`, esta versión de la plataforma utiliza **MongoDB Atlas** como base de datos única y exclusiva, permitiendo almacenamiento moderno de documentos y escalabilidad en la nube.
 
 ---
 
@@ -16,7 +20,7 @@ Asegúrate de tener instalado lo siguiente en tu sistema:
 * **Python 3.10** o superior.
 * **Node.js 20** o superior (junto con `npm`).
 * Un clúster de **MongoDB Atlas** activo.
-  > [!IMPORTANT]
+  > [!IMPORTANT]  
   > Configura el acceso en Atlas (`Network Access`) para permitir la dirección IP de tu equipo y asegúrate de que el usuario de la base de datos tenga permisos de lectura y escritura (`readWrite`).
 
 ---
@@ -33,7 +37,7 @@ MONGODB_NAME=palacio_gamer
 MONGODB_TIMEOUT_MS=5000
 ```
 
-> [!WARNING]
+> [!WARNING]  
 > Si la contraseña de tu base de datos contiene caracteres especiales como `@`, `:`, `/` o `#`, debes codificarlos en formato URL (URL encoding) antes de ponerlos en la URI.
 
 ---
@@ -56,12 +60,11 @@ python -m venv .\backend\.venv
 # 4. Aplicar las migraciones a MongoDB
 .\backend\.venv\Scripts\python.exe .\backend\manage.py migrate
 
-# 5. Cargar datos iniciales de prueba (Categorías y Productos)
+# 5. Cargar datos iniciales de prueba (Categorías y Usuarios)
 .\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store
 
-# 6. Crear cuenta de administrador
+# 6. Crear cuenta de administrador de Django (opcional)
 .\backend\.venv\Scripts\python.exe .\backend\manage.py createsuperuser
-
 ```
 
 #### Opción B: En Git Bash para Windows / Linux / macOS
@@ -80,11 +83,10 @@ backend/.venv/Scripts/python.exe backend/manage.py migrate
 
 # 5. Cargar datos iniciales de prueba
 backend/.venv/Scripts/python.exe backend/manage.py seed_store
-```
 
-> [!TIP]
-> Si deseas administrar la base de datos a través del panel de administración estándar de Django, crea una cuenta de administrador ejecutando:
-> `.\backend\.venv\Scripts\python.exe .\backend\manage.py createsuperuser`
+# 6. Crear cuenta de administrador de Django (opcional)
+backend/.venv/Scripts/python.exe backend/manage.py createsuperuser
+```
 
 ---
 
@@ -93,7 +95,7 @@ backend/.venv/Scripts/python.exe backend/manage.py seed_store
 #### En PowerShell
 ```powershell
 Set-Location .\frontend
-npm.cmd install
+npm install
 ```
 
 #### En Git Bash / Linux / macOS
@@ -132,7 +134,7 @@ Inicia el servidor de desarrollo frontend en el puerto `5173`:
 * **PowerShell**:
   ```powershell
   Set-Location .\frontend
-  npm.cmd run dev
+  npm run dev
   ```
 * **Git Bash / Linux / macOS**:
   ```bash
@@ -142,8 +144,31 @@ Inicia el servidor de desarrollo frontend en el puerto `5173`:
 
 El frontend estará disponible en: **[http://localhost:5173/](http://localhost:5173/)**
 
-> [!NOTE]
+> [!NOTE]  
 > Vite está preconfigurado para redirigir de forma transparente las solicitudes de `/api` y `/media` directamente al backend de Django en `http://127.0.0.1:8000`.
+
+---
+
+## 📊 Diagramas y Arquitectura Visual (Mermaid)
+
+El proyecto incluye herramientas automáticas para la generación de diagramas Mermaid basados en el estado actual del código (modelos de Django, endpoints de API, rutas de React, etc.).
+
+Los diagramas generados se pueden consultar en:  
+📂 **[diagrams/palacio-gamer.mermaid.md](file:///C:/Users/CESAR%20PC/Documents/GitHub/PROYECTO-TESIS-PYTHON-DJANGO-REACT-SQLITE-VERSION-1.0/diagrams/palacio-gamer.mermaid.md)**
+
+### Comandos de Diagramas (Ejecutar en la carpeta `frontend/`):
+* **Generar diagramas manualmente:**
+  ```bash
+  npm run diagrams
+  ```
+* **Ejecutar en modo escucha (Watch mode) para regenerar en caliente:**
+  ```bash
+  npm run diagrams:watch
+  ```
+* **Levantar cliente de desarrollo y watch de diagramas simultáneamente:**
+  ```bash
+  npm run dev:with-diagrams
+  ```
 
 ---
 
@@ -168,7 +193,7 @@ El frontend estará disponible en: **[http://localhost:5173/](http://localhost:5
   ```powershell
   .\backend\.venv\Scripts\python.exe .\backend\manage.py seed_store --reset
   ```
-  > [!CAUTION]
+  > [!CAUTION]  
   > El argumento `--reset` eliminará todas las categorías, productos, pedidos, notificaciones y elementos de carrito existentes en la base de datos de MongoDB. Úsalo con cuidado.
 
 * **Construir el bundle de producción para el Frontend**:
